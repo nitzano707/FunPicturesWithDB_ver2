@@ -149,7 +149,7 @@ export async function getPhotosByGallery(galleryId: string): Promise<Photo[]> {
   return (data as Photo[]) || [];
 }
 
-/** מחיקה מעודכנת - פותרת את בעיית הRLS */
+/** מחיקה מעודכנת - משתמשת ב-RPC function */
 export async function deletePhoto(photo: Photo, ownerIdentifier: string, isAdmin: boolean): Promise<void> {
   // מחיקת הקובץ מה-Storage תמיד
   const storagePath = extractStoragePathFromPublicUrl(photo.image_url);
@@ -157,37 +157,50 @@ export async function deletePhoto(photo: Photo, ownerIdentifier: string, isAdmin
     await supabase.storage.from(BUCKET_NAME).remove([storagePath]).catch(() => {});
   }
 
-  if (isAdmin) {
-    // אדמין: מחק ישירות לפי ID (זה עובר על RLS)
-    // אנחנו נבדוק שהוא באמת אדמין לפני הקריאה לפונקציה הזו
-    const { error } = await supabase
-      .from('photos')
-      .delete()
-      .eq('id', photo.id);
-    
-    if (error) {
-      // אם עדיין יש שגיאה, נסה להשתמש ב-RPC function
+  try {
+    if (isAdmin) {
+      // אדמין: קבל את קוד האדמין מהגלריה
+      const { data: gallery, error: galleryError } = await supabase
+        .from('galleries')
+        .select('admin_code')
+        .eq('id', photo.gallery_id)
+        .single();
+
+      if (galleryError || !gallery) {
+        throw new Error('Could not verify admin permissions');
+      }
+
+      // השתמש ב-RPC עם בדיקת אדמין
       const { error: rpcError } = await supabase
-        .rpc('admin_delete_photo', { 
-          photo_id: photo.id, 
-          gallery_id: photo.gallery_id 
+        .rpc('delete_photo_with_admin_check', {
+          photo_id: photo.id,
+          owner_identifier: ownerIdentifier,
+          is_admin: true,
+          admin_code: gallery.admin_code,
+          gallery_id: photo.gallery_id
         });
-      
+
       if (rpcError) {
-        throw new Error(`Failed to delete photo as admin: ${rpcError.message}`);
+        throw new Error(`Admin delete failed: ${rpcError.message}`);
+      }
+    } else {
+      // משתמש רגיל: השתמש ב-RPC ללא קוד אדמין
+      const { error: rpcError } = await supabase
+        .rpc('delete_photo_with_admin_check', {
+          photo_id: photo.id,
+          owner_identifier: ownerIdentifier,
+          is_admin: false,
+          admin_code: null,
+          gallery_id: photo.gallery_id
+        });
+
+      if (rpcError) {
+        throw new Error(`Delete failed: ${rpcError.message}`);
       }
     }
-  } else {
-    // משתמש רגיל: רק אם זה שלו
-    const { error } = await supabase
-      .from('photos')
-      .delete()
-      .eq('id', photo.id)
-      .eq('owner_identifier', ownerIdentifier);
-    
-    if (error) {
-      throw new Error(`Failed to delete photo: ${error.message}`);
-    }
+  } catch (error: any) {
+    console.error('Delete photo error:', error);
+    throw error;
   }
 }
 
