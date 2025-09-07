@@ -73,11 +73,8 @@ const App: React.FC = () => {
 
   /* ---------- הרשאות מחיקה ---------- */
   const canDeletePhoto = (photo: Photo): boolean => {
-    // אדמין יכול למחוק הכל
-    if (ctx.isAdmin) return true;
-    
-    // משתמש רגיל יכול למחוק רק תמונות שהוא העלה
-    return photo.owner_identifier === ctx.ownerIdentifier;
+    // רק אדמין יכול למחוק תמונות
+    return ctx.isAdmin;
   };
 
   /* ---------- טעינת גלריה פעילה (אם נשמרה) ---------- */
@@ -349,6 +346,20 @@ const App: React.FC = () => {
             HumorizeMe - גרסה 2
           </h1>
           <p className="text-gray-400 mt-2">תנו ל-AI לספר לכם מי אתם "באמת"...</p>
+          
+          {/* Gallery name subtitle */}
+          {ctx.gallery && (
+            <div className="mt-4 p-3 bg-white/10 rounded-lg border border-white/20 inline-block">
+              <h2 className="text-xl font-semibold text-white">
+                גלריה: <span className="text-purple-300">{ctx.gallery.name}</span>
+                {ctx.isAdmin && (
+                  <span className="ml-2 px-2 py-1 bg-amber-500/30 rounded text-amber-200 text-sm">
+                    אדמין
+                  </span>
+                )}
+              </h2>
+            </div>
+          )}
         </header>
 
         {/* Gallery chooser / status bar */}
