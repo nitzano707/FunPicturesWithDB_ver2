@@ -149,7 +149,7 @@ export async function getPhotosByGallery(galleryId: string): Promise<Photo[]> {
   return (data as Photo[]) || [];
 }
 
-/** מחיקה מעודכנת - משתמשת ב-RPC function */
+/** מחיקה מפושטת - ללא פרמטר gallery_id מיותר */
 export async function deletePhoto(photo: Photo, ownerIdentifier: string, isAdmin: boolean): Promise<void> {
   // מחיקת הקובץ מה-Storage תמיד
   const storagePath = extractStoragePathFromPublicUrl(photo.image_url);
@@ -171,32 +171,36 @@ export async function deletePhoto(photo: Photo, ownerIdentifier: string, isAdmin
       }
 
       // השתמש ב-RPC עם בדיקת אדמין
-      const { error: rpcError } = await supabase
+      const { data, error: rpcError } = await supabase
         .rpc('delete_photo_with_admin_check', {
           photo_id: photo.id,
           owner_identifier: ownerIdentifier,
           is_admin: true,
-          admin_code: gallery.admin_code,
-          gallery_id: photo.gallery_id
+          admin_code: gallery.admin_code
         });
 
       if (rpcError) {
+        console.error('Admin delete RPC error:', rpcError);
         throw new Error(`Admin delete failed: ${rpcError.message}`);
       }
+
+      console.log('Admin delete successful:', data);
     } else {
-      // משתמש רגיל: השתמש ב-RPC ללא קוד אדמין
-      const { error: rpcError } = await supabase
+      // משתמש רגיל
+      const { data, error: rpcError } = await supabase
         .rpc('delete_photo_with_admin_check', {
           photo_id: photo.id,
           owner_identifier: ownerIdentifier,
           is_admin: false,
-          admin_code: null,
-          gallery_id: photo.gallery_id
+          admin_code: null
         });
 
       if (rpcError) {
+        console.error('User delete RPC error:', rpcError);
         throw new Error(`Delete failed: ${rpcError.message}`);
       }
+
+      console.log('User delete successful:', data);
     }
   } catch (error: any) {
     console.error('Delete photo error:', error);
