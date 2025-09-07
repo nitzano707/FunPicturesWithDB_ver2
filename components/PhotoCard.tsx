@@ -6,7 +6,7 @@ interface PhotoCardProps {
   photo: Photo;
   onDelete?: (photo: Photo) => void;
   isDeleting?: boolean;
-  canDelete?: boolean; // 🆕 ניהול הרשאות מחיקה
+  canDelete?: boolean; // ניהול הרשאות מחיקה
 }
 
 const PhotoCard: React.FC<PhotoCardProps> = ({ photo, onDelete, isDeleting, canDelete }) => {
@@ -28,7 +28,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({ photo, onDelete, isDeleting, canD
             <p className="font-bold text-xl mb-1 text-white">{photo.username}</p>
             <p className="text-gray-300 text-base">{photo.description}</p>
           </div>
-          {canDelete && onDelete && ( // 🆕 מוצג רק אם יש הרשאה
+          {canDelete && onDelete && ( // מוצג רק אם יש הרשאה
             <button
               onClick={() => onDelete(photo)}
               disabled={isDeleting}
