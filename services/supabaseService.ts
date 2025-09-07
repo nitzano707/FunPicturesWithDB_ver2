@@ -1,4 +1,5 @@
-// services/supabaseService.ts
+// services/supabaseService.ts - גרסה מעודכנת עם טיפול טוב יותר באדמין
+
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 import type { Gallery, Photo } from '../types';
@@ -148,22 +149,46 @@ export async function getPhotosByGallery(galleryId: string): Promise<Photo[]> {
   return (data as Photo[]) || [];
 }
 
-/** מחיקה: משתמש רגיל או אדמין */
+/** מחיקה מעודכנת - פותרת את בעיית הRLS */
 export async function deletePhoto(photo: Photo, ownerIdentifier: string, isAdmin: boolean): Promise<void> {
+  // מחיקת הקובץ מה-Storage תמיד
   const storagePath = extractStoragePathFromPublicUrl(photo.image_url);
   if (storagePath) {
     await supabase.storage.from(BUCKET_NAME).remove([storagePath]).catch(() => {});
   }
 
-  let query = supabase.from('photos').delete().eq('id', photo.id);
-
-  if (!isAdmin) {
-    // רק אם זה המשתמש שהעלה
-    query = query.eq('owner_identifier', ownerIdentifier);
+  if (isAdmin) {
+    // אדמין: מחק ישירות לפי ID (זה עובר על RLS)
+    // אנחנו נבדוק שהוא באמת אדמין לפני הקריאה לפונקציה הזו
+    const { error } = await supabase
+      .from('photos')
+      .delete()
+      .eq('id', photo.id);
+    
+    if (error) {
+      // אם עדיין יש שגיאה, נסה להשתמש ב-RPC function
+      const { error: rpcError } = await supabase
+        .rpc('admin_delete_photo', { 
+          photo_id: photo.id, 
+          gallery_id: photo.gallery_id 
+        });
+      
+      if (rpcError) {
+        throw new Error(`Failed to delete photo as admin: ${rpcError.message}`);
+      }
+    }
+  } else {
+    // משתמש רגיל: רק אם זה שלו
+    const { error } = await supabase
+      .from('photos')
+      .delete()
+      .eq('id', photo.id)
+      .eq('owner_identifier', ownerIdentifier);
+    
+    if (error) {
+      throw new Error(`Failed to delete photo: ${error.message}`);
+    }
   }
-
-  const { error } = await query;
-  if (error) throw new Error(`Failed to delete photo: ${error.message}`);
 }
 
 /** חיפוש לפי שם משתמש */
