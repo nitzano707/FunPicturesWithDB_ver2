@@ -111,8 +111,13 @@ const App: React.FC = () => {
     }
   }
 
+  // הצטרפות רגילה (עם קוד שיתוף בלבד)
   async function handleJoinGallery() {
-    if (!joinCode.trim()) return;
+    if (!joinCode.trim()) {
+      setError('יש להזין קוד שיתוף.');
+      return;
+    }
+    
     try {
       setError(null);
       const g = await supa.joinGalleryByShareCode(joinCode.trim().toUpperCase());
@@ -120,17 +125,47 @@ const App: React.FC = () => {
         setError('לא נמצאה גלריה עם הקוד שסופק.');
         return;
       }
-      let isAdmin = false;
-      if (adminCodeInput.trim()) {
-        isAdmin = await supa.isAdminForGallery(g.id, adminCodeInput.trim().toUpperCase());
-      }
+      
+      // התחבר כמשתמש רגיל
+      const isAdmin = false;
       setCtx({ ownerIdentifier, gallery: g, isAdmin });
       saveGalleryCtx(g, isAdmin);
       setJoinCode('');
-      setAdminCodeInput('');
       setViewMode('gallery');
     } catch (err: any) {
       setError(err.message || 'Join gallery failed');
+    }
+  }
+
+  // התחברות כאדמין (עם קוד אדמין בלבד)
+  async function handleAdminLogin() {
+    if (!adminCodeInput.trim()) {
+      setError('יש להזין קוד ניהול.');
+      return;
+    }
+    
+    try {
+      setError(null);
+      // חפש גלריה לפי קוד אדמין
+      const { data: gallery, error } = await supa.supabase
+        .from('galleries')
+        .select('*')
+        .eq('admin_code', adminCodeInput.trim().toUpperCase())
+        .single();
+
+      if (error || !gallery) {
+        setError('קוד ניהול שגוי או לא נמצאה גלריה מתאימה.');
+        return;
+      }
+
+      // התחבר כאדמין
+      const isAdmin = true;
+      setCtx({ ownerIdentifier, gallery, isAdmin });
+      saveGalleryCtx(gallery, isAdmin);
+      setAdminCodeInput('');
+      setViewMode('gallery');
+    } catch (err: any) {
+      setError(err.message || 'שגיאה בהתחברות כאדמין');
     }
   }
 
@@ -319,10 +354,10 @@ const App: React.FC = () => {
         {/* Gallery chooser / status bar */}
         <section className="mb-6 bg-white/5 p-4 rounded-xl border border-white/10">
           {!ctx.gallery ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Create */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Create Gallery */}
               <div className="p-4 bg-black/20 rounded-lg">
-                <h3 className="font-semibold mb-2">יצירת גלריה</h3>
+                <h3 className="font-semibold mb-2">יצירת גלריה חדשה</h3>
                 <input
                   type="text"
                   placeholder="שם הגלריה"
@@ -334,13 +369,13 @@ const App: React.FC = () => {
                   onClick={handleCreateGallery}
                   className="w-full bg-purple-600 hover:bg-purple-700 py-2 rounded-lg"
                 >
-                  צור גלריה
+                  צור גלריה (תהיה אדמין)
                 </button>
               </div>
 
-              {/* Join */}
+              {/* Join as Regular User */}
               <div className="p-4 bg-black/20 rounded-lg">
-                <h3 className="font-semibold mb-2">הצטרפות לגלריה קיימת</h3>
+                <h3 className="font-semibold mb-2">הצטרפות כמשתמש רגיל</h3>
                 <input
                   type="text"
                   placeholder="קוד שיתוף (Share-Code)"
@@ -348,19 +383,33 @@ const App: React.FC = () => {
                   onChange={e => setJoinCode(e.target.value)}
                   className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 focus:ring-teal-500 focus:border-teal-500 mb-2"
                 />
-                <input
-                  type="text"
-                  placeholder="קוד ניהול (אופציונלי)"
-                  value={adminCodeInput}
-                  onChange={e => setAdminCodeInput(e.target.value)}
-                  className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 focus:ring-teal-500 focus:border-teal-500 mb-2"
-                />
                 <button
                   onClick={handleJoinGallery}
                   className="w-full bg-teal-600 hover:bg-teal-700 py-2 rounded-lg"
                 >
-                  הצטרף
+                  הצטרף כמשתמש
                 </button>
+              </div>
+
+              {/* Admin Login */}
+              <div className="p-4 bg-black/20 rounded-lg border-2 border-amber-500/30">
+                <h3 className="font-semibold mb-2 text-amber-300">התחברות כאדמין</h3>
+                <input
+                  type="text"
+                  placeholder="קוד ניהול (Admin-Code)"
+                  value={adminCodeInput}
+                  onChange={e => setAdminCodeInput(e.target.value)}
+                  className="w-full bg-gray-800/50 border border-amber-600 rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500 mb-2"
+                />
+                <button
+                  onClick={handleAdminLogin}
+                  className="w-full bg-amber-600 hover:bg-amber-700 py-2 rounded-lg font-bold"
+                >
+                  התחבר כאדמין
+                </button>
+                <p className="text-xs text-amber-200 mt-1">
+                  רק קוד ניהול - ללא צורך בקוד שיתוף
+                </p>
               </div>
             </div>
           ) : (
