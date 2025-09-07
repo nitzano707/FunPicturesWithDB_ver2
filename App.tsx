@@ -73,11 +73,11 @@ const App: React.FC = () => {
 
   /* ---------- הרשאות מחיקה ---------- */
   const canDeletePhoto = (photo: Photo): boolean => {
-  console.log('Debug canDeletePhoto:');
-  console.log('ctx.isAdmin:', ctx.isAdmin);
-  console.log('photo.owner_identifier:', photo.owner_identifier);
-  console.log('ctx.ownerIdentifier:', ctx.ownerIdentifier);
-  console.log('Are they equal?', photo.owner_identifier === ctx.ownerIdentifier);
+  //console.log('Debug canDeletePhoto:');
+  //console.log('ctx.isAdmin:', ctx.isAdmin);
+ //console.log('photo.owner_identifier:', photo.owner_identifier);
+  //console.log('ctx.ownerIdentifier:', ctx.ownerIdentifier);
+  //console.log('Are they equal?', photo.owner_identifier === ctx.ownerIdentifier);
   
   // אדמין יכול למחוק הכל
   if (ctx.isAdmin) return true;
