@@ -45,7 +45,7 @@ function genCode(len = 6): string {
   return out;
 }
 
-/** יוצר גלריה (כולל share_code/admin_code בצד לקוח, בדיקת ייחודיות ע"י DB) */
+/** יוצר גלריה */
 export async function createGallery(name: string, creatorIdentifier: string): Promise<Gallery> {
   let attempts = 0;
   while (attempts < 5) {
@@ -60,7 +60,6 @@ export async function createGallery(name: string, creatorIdentifier: string): Pr
 
     if (!error && data) return data as Gallery;
 
-    // אם התפוצץ בגלל כפילות קוד – ננסה שוב עם קוד חדש
     if (error && String(error.message).includes('duplicate')) continue;
     if (error) throw error;
   }
@@ -96,7 +95,7 @@ export async function isAdminForGallery(galleryId: string, adminCode: string): P
 /* Photos                             */
 /* ---------------------------------- */
 
-/** שמירה: העלאה ל־Storage + הכנסת רשומה לטבלה */
+/** שמירה */
 export async function savePhoto(
   galleryId: string,
   ownerIdentifier: string,
@@ -106,7 +105,6 @@ export async function savePhoto(
 ): Promise<Photo> {
   const ext = safeExt(imageFile.name);
   const fileName = `${uuidv4()}.${ext}`;
-  // תמונות נשמרות בתיקיית הגלריה (כדי שיהיה קל לנקות בעתיד)
   const filePath = `${galleryId}/${fileName}`;
 
   // upload
@@ -131,7 +129,6 @@ export async function savePhoto(
     .single();
 
   if (insertError || !data) {
-    // ניקוי ה־storage אם נכשל DB insert
     await supabase.storage.from(BUCKET_NAME).remove([filePath]).catch(() => {});
     throw new Error(insertError?.message || 'Failed to save photo data');
   }
@@ -139,7 +136,7 @@ export async function savePhoto(
   return data as Photo;
 }
 
-/** תמונות בגלריה */
+/** קבלת תמונות */
 export async function getPhotosByGallery(galleryId: string): Promise<Photo[]> {
   const { data, error } = await supabase
     .from('photos')
@@ -151,24 +148,25 @@ export async function getPhotosByGallery(galleryId: string): Promise<Photo[]> {
   return (data as Photo[]) || [];
 }
 
-/** מחיקה: קודם Storage (best-effort), ואז רשומה */
-export async function deletePhoto(photo: Photo): Promise<void> {
+/** מחיקה: משתמש רגיל או אדמין */
+export async function deletePhoto(photo: Photo, ownerIdentifier: string, isAdmin: boolean): Promise<void> {
   const storagePath = extractStoragePathFromPublicUrl(photo.image_url);
   if (storagePath) {
-    const { error: storageError } = await supabase.storage.from(BUCKET_NAME).remove([storagePath]);
-    if (storageError) {
-      // לא מפילים את הזרימה על מחיקת Storage – העיקר להסיר מה־DB
-      console.warn(`Could not delete image from storage: ${storageError.message}`);
-    }
-  } else {
-    console.warn(`Could not extract storage path from URL: ${photo.image_url}`);
+    await supabase.storage.from(BUCKET_NAME).remove([storagePath]).catch(() => {});
   }
 
-  const { error: dbError } = await supabase.from('photos').delete().eq('id', photo.id);
-  if (dbError) throw new Error(`Failed to delete photo data: ${dbError.message}`);
+  let query = supabase.from('photos').delete().eq('id', photo.id);
+
+  if (!isAdmin) {
+    // רק אם זה המשתמש שהעלה
+    query = query.eq('owner_identifier', ownerIdentifier);
+  }
+
+  const { error } = await query;
+  if (error) throw new Error(`Failed to delete photo: ${error.message}`);
 }
 
-/** חיפוש לפי שם משתמש בתוך גלריה */
+/** חיפוש לפי שם משתמש */
 export async function getPhotoByUsernameInGallery(galleryId: string, username: string): Promise<Photo | null> {
   const { data, error } = await supabase
     .from('photos')
@@ -181,13 +179,4 @@ export async function getPhotoByUsernameInGallery(galleryId: string, username: s
 
   if (error && error.code !== 'PGRST116') throw error;
   return (data as Photo) || null;
-}
-
-/* ---------------------------------- */
-/* Permissions helper                 */
-/* ---------------------------------- */
-
-/** בדיקה אם המשתמש רשאי למחוק */
-export function canDeletePhoto(photo: Photo, ctx: { ownerIdentifier: string, isAdmin: boolean }): boolean {
-  return ctx.isAdmin || photo.owner_identifier === ctx.ownerIdentifier;
 }
