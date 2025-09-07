@@ -149,15 +149,10 @@ export async function getPhotosByGallery(galleryId: string): Promise<Photo[]> {
   return (data as Photo[]) || [];
 }
 
-/** מחיקה מפושטת - ללא פרמטר gallery_id מיותר */
+/** מחיקה מתוקנת - מוחק מהטבלה קודם ורק אז מהStorage */
 export async function deletePhoto(photo: Photo, ownerIdentifier: string, isAdmin: boolean): Promise<void> {
-  // מחיקת הקובץ מה-Storage תמיד
-  const storagePath = extractStoragePathFromPublicUrl(photo.image_url);
-  if (storagePath) {
-    await supabase.storage.from(BUCKET_NAME).remove([storagePath]).catch(() => {});
-  }
-
   try {
+    // ראשית מחק מהטבלה
     if (isAdmin) {
       // אדמין: קבל את קוד האדמין מהגלריה
       const { data: gallery, error: galleryError } = await supabase
@@ -184,7 +179,7 @@ export async function deletePhoto(photo: Photo, ownerIdentifier: string, isAdmin
         throw new Error(`Admin delete failed: ${rpcError.message}`);
       }
 
-      console.log('Admin delete successful:', data);
+      console.log('Admin delete from DB successful:', data);
     } else {
       // משתמש רגיל
       const { data, error: rpcError } = await supabase
@@ -200,8 +195,24 @@ export async function deletePhoto(photo: Photo, ownerIdentifier: string, isAdmin
         throw new Error(`Delete failed: ${rpcError.message}`);
       }
 
-      console.log('User delete successful:', data);
+      console.log('User delete from DB successful:', data);
     }
+
+    // רק אחרי שהמחיקה מהטבלה הצליחה - מחק מהStorage
+    const storagePath = extractStoragePathFromPublicUrl(photo.image_url);
+    if (storagePath) {
+      const { error: storageError } = await supabase.storage
+        .from(BUCKET_NAME)
+        .remove([storagePath]);
+      
+      if (storageError) {
+        console.warn('Storage delete failed, but DB delete succeeded:', storageError);
+        // לא זורק שגיאה כי המחיקה מהטבלה הצליחה
+      } else {
+        console.log('Storage delete successful');
+      }
+    }
+
   } catch (error: any) {
     console.error('Delete photo error:', error);
     throw error;
