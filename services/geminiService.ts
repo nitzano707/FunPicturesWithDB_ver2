@@ -1,61 +1,72 @@
-
+// services/geminiService.ts
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-/**
- * ENV:
- *  VITE_GEMINI_API_KEYS  - מפתח יחיד או רשימת מפתחות מופרדת בפסיקים (בשלב זה נשתמש בראשון בלבד)
- *  VITE_GEMINI_MODEL     - שם דגם, ברירת מחדל: "gemini-1.5-flash"
- */
-const RAW_KEYS = (import.meta.env.VITE_GEMINI_API_KEYS || "")
+// נשתמש במפתח מה־ENV (לוקחים את הראשון אם יש פסיקים)
+const apiKeys = (import.meta.env.VITE_GEMINI_API_KEYS || "")
   .split(",")
-  .map(s => s.trim())
+  .map((s) => s.trim())
   .filter(Boolean);
 
-const MODEL = import.meta.env.VITE_GEMINI_MODEL || "gemini-1.5-flash";
-
-if (RAW_KEYS.length === 0) {
-  throw new Error("❌ לא הוגדר מפתח Gemini בסביבה (VITE_GEMINI_API_KEYS)");
+if (apiKeys.length === 0) {
+  throw new Error("VITE_GEMINI_API_KEYS is not set. Please provide it in environment variables.");
 }
 
-const ACTIVE_KEY = RAW_KEYS[0]; // נשתמש במפתח הראשון בלבד
+const apiKey = apiKeys[0]; // בשלב זה נשתמש רק בראשון
+const genAI = new GoogleGenerativeAI(apiKey);
 
-/** בקשת תיאור מהמודל */
-async function callModel(prompt: string, image?: File): Promise<string> {
-  const genAI = new GoogleGenerativeAI(ACTIVE_KEY);
-  const model = genAI.getGenerativeModel({ model: MODEL });
+// פונקציה שעושה המרה של קובץ לתבנית תואמת Gemini
+async function fileToGenerativePart(file: File) {
+  const base64EncodedData = await new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result.split(",")[1]);
+      }
+    };
+    reader.readAsDataURL(file);
+  });
 
-  const parts: any[] = [{ text: prompt }];
-  if (image) {
-    const bytes = await image.arrayBuffer();
-    parts.push({
-      inlineData: {
-        data: btoa(String.fromCharCode(...new Uint8Array(bytes))),
-        mimeType: image.type || "image/png",
-      },
-    });
-  }
-
-  const result = await model.generateContent(parts);
-  const text = result.response.text();
-  if (!text) throw new Error("המודל החזיר תשובה ריקה.");
-  return text;
+  return {
+    inlineData: {
+      data: base64EncodedData,
+      mimeType: file.type,
+    },
+  };
 }
 
-/** פרומפט ברירת מחדל */
+// פרומפט ברירת מחדל – ניתן לשנות לפי הצורך
 function defaultPrompt(): string {
-  return [
-    "אתה כותב קריאייטיבי לאפליקציה מהנה. נתח את האדם בתמונה כדמות בדיונית, קליל ומצחיק.",
-    "התמקד בהבעה, תנוחה, לבוש ואווירה; המצא פרסונה עם נופך הומוריסטי.",
-    "תן הערכה מצחיקה (אך מכבדת) לגיל ולעיסוק יומיומי אפשרי.",
-    "120–140 מילים, קריא, עם משפט סיום: ״לא לקחת ברצינות 😉״",
-  ].join(" ");
+  return (
+    "התבונן בתמונה וכתוב תיאור מצחיק, יצירתי ומלא חיים באורך 120–140 מילים. " +
+    "הטקסט צריך להציג את האדם כדמות בדיונית קומית, עם דימויים חכמים, " +
+    "ניגודים משעשעים בין מה שהבעת הפנים והלבוש מנסים לומר לבין מה שהחיוך או הגוף באמת משדרים. " +
+    "שלב תיאורים צבעוניים של ההבעה, התנוחה, הלבוש והאווירה הכללית, " +
+    "והפוך אותם לחלק מאישיות מוגזמת ומצחיקה. המצא לו שם או כינוי קליל, " +
+    "תן הערכה הומוריסטית לגבי גיל, מגדר ועיסוק אפשרי, והוסף אנקדוטה קטנה " +
+    "שתגרום לקוראת להרגיש שהיא מגלה 'סוד מצחיק' עליו. " +
+    "שמור על טון קליל, שנון, כיפי ולא פוגעני. " +
+    "בסיום תמיד הוסף את המשפט: [לא לקחת ברצינות 😉]"
+  );
 }
 
-/** API לשימוש חיצוני */
+// פונקציה ראשית לשימוש באפליקציה
 export async function generateFunnyDescription(
-  file: File,
+  imageFile: File,
   customPrompt?: string
 ): Promise<string> {
-  const prompt = customPrompt || defaultPrompt();
-  return await callModel(prompt, file);
+  try {
+    const imagePart = await fileToGenerativePart(imageFile);
+    const textPart = { text: customPrompt || defaultPrompt() };
+
+    const response = await genAI.getGenerativeModel({
+      model: import.meta.env.VITE_GEMINI_MODEL || "gemini-2.5-flash-lite",
+    }).generateContent({
+      contents: { parts: [imagePart, textPart] },
+    });
+
+    return response.response.text();
+  } catch (error) {
+    console.error("Error generating description from Gemini:", error);
+    throw new Error("❌ לא הצלחנו ליצור תיאור. נסה שוב.");
+  }
 }
