@@ -73,9 +73,18 @@ const App: React.FC = () => {
 
   /* ---------- הרשאות מחיקה ---------- */
   const canDeletePhoto = (photo: Photo): boolean => {
-    // רק אדמין יכול למחוק תמונות
-    return ctx.isAdmin;
-  };
+  console.log('Debug canDeletePhoto:');
+  console.log('ctx.isAdmin:', ctx.isAdmin);
+  console.log('photo.owner_identifier:', photo.owner_identifier);
+  console.log('ctx.ownerIdentifier:', ctx.ownerIdentifier);
+  console.log('Are they equal?', photo.owner_identifier === ctx.ownerIdentifier);
+  
+  // אדמין יכול למחוק הכל
+  if (ctx.isAdmin) return true;
+  
+  // משתמש רגיל יכול למחוק רק תמונות שהוא העלה
+  return photo.owner_identifier === ctx.ownerIdentifier;
+};
 
   /* ---------- טעינת גלריה פעילה (אם נשמרה) ---------- */
   useEffect(() => {
