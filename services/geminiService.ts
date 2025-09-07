@@ -6,7 +6,11 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
  *  VITE_GEMINI_API_KEYS  - מחרוזת של מפתחות מופרדת בפסיקים
  *  VITE_GEMINI_MODEL     - שם דגם, ברירת מחדל: "gemini-1.5-flash"
  */
-const RAW_KEYS = (import.meta.env.VITE_GEMINI_API_KEYS || "").split(",").map(s => s.trim()).filter(Boolean);
+const RAW_KEYS = (import.meta.env.VITE_GEMINI_API_KEYS || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 const MODEL = import.meta.env.VITE_GEMINI_MODEL || "gemini-1.5-flash";
 
 const BAD_KEY_TTL_MS = 24 * 60 * 60 * 1000; // 24 שעות
@@ -18,12 +22,18 @@ function loadBadKeys(): Record<string, number> {
   try {
     const raw = localStorage.getItem(LS_BAD_KEYS);
     return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
+  } catch {
+    return {};
+  }
 }
 
 /** כותב bad-keys */
 function saveBadKeys(map: Record<string, number>) {
-  localStorage.setItem(LS_BAD_KEYS, JSON.stringify(map));
+  try {
+    localStorage.setItem(LS_BAD_KEYS, JSON.stringify(map));
+  } catch {
+    // אם localStorage לא זמין (למשל SSR), מתעלמים
+  }
 }
 
 /** מסמן מפתח כבעייתי ל־24 שעות */
@@ -38,19 +48,22 @@ function getUsableKey(): string | null {
   if (RAW_KEYS.length === 0) return null;
 
   const bad = loadBadKeys();
-  // מנקים פג תוקף
   const now = Date.now();
+
+  // מנקים פג תוקף
   for (const k of Object.keys(bad)) {
     if (bad[k] <= now) delete bad[k];
   }
   saveBadKeys(bad);
 
   let idx = Number(localStorage.getItem(LS_KEY_INDEX) || "0");
+
   for (let tries = 0; tries < RAW_KEYS.length; tries++) {
     const key = RAW_KEYS[idx % RAW_KEYS.length];
-    idx++;
+    idx = (idx + 1) % RAW_KEYS.length;
+
     if (!bad[key]) {
-      localStorage.setItem(LS_KEY_INDEX, String(idx % RAW_KEYS.length));
+      localStorage.setItem(LS_KEY_INDEX, String(idx));
       return key;
     }
   }
@@ -58,13 +71,18 @@ function getUsableKey(): string | null {
 }
 
 /** בקשת תיאור מהמודל תוך סבב מפתחות */
-async function callModelWithRotation(prompt: string, image?: File): Promise<string> {
+async function callModelWithRotation(
+  prompt: string,
+  image?: File
+): Promise<string> {
   const tried: string[] = [];
 
   while (true) {
     const key = getUsableKey();
     if (!key) {
-      throw new Error("אין כרגע מפתח Gemini זמין. נסה מאוחר יותר או הוסף מפתחות (VITE_GEMINI_API_KEYS).");
+      throw new Error(
+        "אין כרגע מפתח Gemini זמין. נסה מאוחר יותר או הוסף מפתחות (VITE_GEMINI_API_KEYS)."
+      );
     }
     tried.push(key);
 
@@ -73,11 +91,14 @@ async function callModelWithRotation(prompt: string, image?: File): Promise<stri
       const model = genAI.getGenerativeModel({ model: MODEL });
 
       const parts: any[] = [{ text: prompt }];
+
       if (image) {
         const bytes = await image.arrayBuffer();
         parts.push({
           inlineData: {
-            data: btoa(String.fromCharCode(...new Uint8Array(bytes))),
+            data: btoa(
+              String.fromCharCode(...new Uint8Array(bytes))
+            ),
             mimeType: image.type || "image/png",
           },
         });
@@ -85,24 +106,46 @@ async function callModelWithRotation(prompt: string, image?: File): Promise<stri
 
       const result = await model.generateContent(parts);
       const text = result.response.text();
-      if (!text) throw new Error("המודל החזיר תשובה ריקה.");
+
+      if (!text) {
+        throw new Error("המודל החזיר תשובה ריקה.");
+      }
+
       return text;
     } catch (err: any) {
       const msg = (err?.message || "").toLowerCase();
-      // rate-limit / forbidden -> מסמנים את המפתח כ"פסול זמנית" ועוברים לבא
-      if (msg.includes("rate") || msg.includes("429") || msg.includes("quota") || msg.includes("forbidden") || msg.includes("403")) {
-        markKeyBad(tried[tried.length - 1]);
+
+      // rate-limit / quota / forbidden → נעבור למפתח הבא
+      if (
+        msg.includes("rate") ||
+        msg.includes("429") ||
+        msg.includes("quota") ||
+        msg.includes("forbidden") ||
+        msg.includes("403")
+      ) {
+        markKeyBad(key);
+
         if (tried.length >= RAW_KEYS.length) {
-          throw new Error("כל המפתחות חסומים זמנית (Rate limit). נסה שוב מאוחר יותר.");
+          throw new Error(
+            "כל המפתחות חסומים זמנית (Rate limit). נסה שוב מאוחר יותר."
+          );
         }
         continue; // ננסה מפתח אחר
       }
+
+      // במקרה של שגיאה לוגית (כמו recursion / stack overflow)
+      if (msg.includes("call stack")) {
+        throw new Error(
+          "שגיאת מערכת פנימית: Maximum call stack size exceeded. נסה לרענן את הדף."
+        );
+      }
+
       throw err;
     }
   }
 }
 
-/** פרומפט ברירת מחדל – אפשר להחליף/להזריק מבחוץ בהמשך */
+/** פרומפט ברירת מחדל */
 function defaultPrompt(): string {
   return [
     "אתה כותב קריאייטיבי לאפליקציה מהנה. נתח את האדם בתמונה כדמות בדיונית, קליל ומצחיק.",
@@ -113,7 +156,10 @@ function defaultPrompt(): string {
 }
 
 /** API חיצוני לשימוש באפליקציה */
-export async function generateFunnyDescription(file: File, customPrompt?: string): Promise<string> {
+export async function generateFunnyDescription(
+  file: File,
+  customPrompt?: string
+): Promise<string> {
   const prompt = customPrompt || defaultPrompt();
   return await callModelWithRotation(prompt, file);
 }
