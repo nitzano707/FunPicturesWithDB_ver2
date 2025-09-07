@@ -10,14 +10,69 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
 const BUCKET_NAME = 'photos';
 
 /**
- * Save photo (upload to storage + insert into DB)
+ * צור קודים ייחודיים לגלריה
  */
-export const savePhoto = async (username: string, imageFile: File, description: string): Promise<Photo> => {
-  // צור שם קובץ ייחודי ובטוח (UUID)
+function generateCode(prefix: string = ''): string {
+  return `${prefix}${Math.random().toString(36).substring(2, 8)}`;
+}
+
+/**
+ * יצירת גלריה חדשה
+ */
+export const createGallery = async (name: string, creatorIdentifier: string) => {
+  const shareCode = generateCode('S-');
+  const adminCode = generateCode('A-');
+
+  const { data, error } = await supabase
+    .from('galleries')
+    .insert([{
+      name,
+      share_code: shareCode,
+      admin_code: adminCode,
+      creator_identifier: creatorIdentifier,
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating gallery:', error);
+    throw new Error(error.message);
+  }
+
+  return data;
+};
+
+/**
+ * אחזור גלריה לפי קוד שיתוף
+ */
+export const getGalleryByCode = async (shareCode: string) => {
+  const { data, error } = await supabase
+    .from('galleries')
+    .select('*')
+    .eq('share_code', shareCode)
+    .single();
+
+  if (error) {
+    console.error('Error fetching gallery by code:', error);
+    throw new Error(error.message);
+  }
+
+  return data;
+};
+
+/**
+ * שמירת תמונה בגלריה
+ */
+export const savePhoto = async (
+  username: string,
+  imageFile: File,
+  description: string,
+  galleryId: string,
+  ownerIdentifier: string
+): Promise<Photo> => {
   const fileExt = imageFile.name.split('.').pop();
   const fileName = `${uuidv4()}.${fileExt}`;
   const filePath = `uploads/${fileName}`;
@@ -32,7 +87,7 @@ export const savePhoto = async (username: string, imageFile: File, description: 
     throw new Error(`Failed to upload image: ${uploadError.message}`);
   }
 
-  // קבלת URL ציבורי
+  // יצירת URL ציבורי
   const { data: publicUrlData } = supabase.storage
     .from(BUCKET_NAME)
     .getPublicUrl(filePath);
@@ -42,14 +97,19 @@ export const savePhoto = async (username: string, imageFile: File, description: 
   // הכנסת רשומה לטבלה
   const { data, error: insertError } = await supabase
     .from('photos')
-    .insert([{ username, image_url: imageUrl, description }])
+    .insert([{
+      gallery_id: galleryId,
+      username,
+      image_url: imageUrl,
+      description,
+      owner_identifier: ownerIdentifier,
+    }])
     .select()
     .single();
 
   if (insertError || !data) {
     console.error('Error saving photo data:', insertError);
-    // מחיקה מה-Bucket אם נכשלת הכנסת הרשומה
-    await supabase.storage.from(BUCKET_NAME).remove([filePath]);
+    await supabase.storage.from(BUCKET_NAME).remove([filePath]); // rollback
     throw new Error(`Failed to save photo data: ${insertError?.message}`);
   }
 
@@ -57,79 +117,120 @@ export const savePhoto = async (username: string, imageFile: File, description: 
 };
 
 /**
- * Get latest photo by username
+ * אחזור כל התמונות בגלריה
  */
-export const getPhotoByUsername = async (username: string): Promise<Photo | null> => {
+export const getPhotosByGallery = async (galleryId: string): Promise<Photo[]> => {
   const { data, error } = await supabase
     .from('photos')
     .select('*')
-    .eq('username', username)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
-
-  if (error && error.code !== 'PGRST116') {
-    console.error('Error fetching photo by username:', error);
-    throw error;
-  }
-
-  return data;
-};
-
-/**
- * Delete photo (from DB + storage)
- */
-export const deletePhoto = async (photo: Photo): Promise<void> => {
-  const urlString = photo.image_url;
-
-  try {
-    // חילוץ הנתיב מתוך ה-URL
-    const url = new URL(urlString);
-    const parts = url.pathname.split(`/object/public/${BUCKET_NAME}/`);
-    const filePath = parts[1]; // מה שמגיע אחרי שם ה-bucket
-
-    if (filePath) {
-      const { error: storageError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .remove([filePath]);
-
-      if (storageError) {
-        console.warn(`Could not delete image from storage: ${storageError.message}`);
-      }
-    } else {
-      console.warn(`Could not extract file path from URL: ${urlString}. Skipping storage deletion.`);
-    }
-
-    // מחיקת הרשומה מהטבלה
-    const { error: dbError } = await supabase
-      .from("photos")
-      .delete()
-      .eq("id", photo.id);
-
-    if (dbError) {
-      console.error("Error deleting photo from database:", dbError);
-      throw new Error(`Failed to delete photo data: ${dbError.message}`);
-    }
-  } catch (err: any) {
-    console.error("Unexpected error while deleting photo:", err.message);
-    throw err;
-  }
-};
-
-
-/**
- * Get all photos
- */
-export const getAllPhotos = async (): Promise<Photo[]> => {
-  const { data, error } = await supabase
-    .from('photos')
-    .select('*')
+    .eq('gallery_id', galleryId)
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching all photos:', error);
-    throw error;
+    console.error('Error fetching gallery photos:', error);
+    throw new Error(error.message);
   }
 
   return data || [];
+};
+
+/**
+ * מחיקת תמונה - רק יוצר הגלריה או בעל התמונה
+ */
+export const deletePhoto = async (
+  photo: Photo,
+  adminCode?: string,
+  requesterIdentifier?: string
+): Promise<void> => {
+  // בדיקה אם יש הרשאה למחיקה
+  let canDelete = false;
+
+  if (adminCode) {
+    const { data: gallery } = await supabase
+      .from('galleries')
+      .select('admin_code')
+      .eq('id', photo.gallery_id)
+      .single();
+
+    if (gallery && gallery.admin_code === adminCode) {
+      canDelete = true;
+    }
+  }
+
+  if (requesterIdentifier && photo.owner_identifier === requesterIdentifier) {
+    canDelete = true;
+  }
+
+  if (!canDelete) {
+    throw new Error('אין לך הרשאה למחוק תמונה זו.');
+  }
+
+  // מחיקת התמונה מה-Bucket
+  const url = new URL(photo.image_url);
+  const parts = url.pathname.split(`/object/public/${BUCKET_NAME}/`);
+  const filePath = parts[1];
+
+  if (filePath) {
+    const { error: storageError } = await supabase.storage
+      .from(BUCKET_NAME)
+      .remove([filePath]);
+
+    if (storageError) {
+      console.warn(`Could not delete image from storage: ${storageError.message}`);
+    }
+  }
+
+  // מחיקת הרשומה מהטבלה
+  const { error: dbError } = await supabase
+    .from("photos")
+    .delete()
+    .eq("id", photo.id);
+
+  if (dbError) {
+    console.error("Error deleting photo from database:", dbError);
+    throw new Error(`Failed to delete photo data: ${dbError.message}`);
+  }
+};
+
+/**
+ * מחיקת גלריה + כל התמונות שבה (admin בלבד)
+ */
+export const deleteGallery = async (galleryId: string, adminCode: string): Promise<void> => {
+  const { data: gallery } = await supabase
+    .from('galleries')
+    .select('admin_code')
+    .eq('id', galleryId)
+    .single();
+
+  if (!gallery || gallery.admin_code !== adminCode) {
+    throw new Error('אין לך הרשאה למחוק את הגלריה.');
+  }
+
+  // מחיקת תמונות מה-Bucket
+  const { data: photos } = await supabase
+    .from('photos')
+    .select('*')
+    .eq('gallery_id', galleryId);
+
+  if (photos) {
+    for (const photo of photos) {
+      const url = new URL(photo.image_url);
+      const parts = url.pathname.split(`/object/public/${BUCKET_NAME}/`);
+      const filePath = parts[1];
+      if (filePath) {
+        await supabase.storage.from(BUCKET_NAME).remove([filePath]);
+      }
+    }
+  }
+
+  // מחיקת תמונות מה-DB
+  await supabase.from('photos').delete().eq('gallery_id', galleryId);
+
+  // מחיקת הגלריה
+  const { error: dbError } = await supabase.from('galleries').delete().eq('id', galleryId);
+
+  if (dbError) {
+    console.error("Error deleting gallery:", dbError);
+    throw new Error(`Failed to delete gallery: ${dbError.message}`);
+  }
 };
