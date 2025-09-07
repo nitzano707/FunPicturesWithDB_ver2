@@ -424,8 +424,13 @@ const App: React.FC = () => {
                   )}
                 </p>
                 <div className="text-sm text-gray-400 mt-1">
-                  קוד שיתוף: <code className="text-gray-200">{ctx.gallery.share_code}</code> • קוד ניהול:{' '}
-                  <code className="text-gray-200">{ctx.gallery.admin_code}</code>
+                  קוד שיתוף: <code className="text-gray-200">{ctx.gallery.share_code}</code>
+                  {ctx.isAdmin && (
+                    <>
+                      {' • קוד ניהול: '}
+                      <code className="text-gray-200">{ctx.gallery.admin_code}</code>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2">
