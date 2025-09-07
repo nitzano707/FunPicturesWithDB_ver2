@@ -216,7 +216,9 @@ const App: React.FC = () => {
     setIsDeleting(photo.id);
     setError(null);
     try {
-      await supa.deletePhoto(photo);
+      //await supa.deletePhoto(photo);
+      await supa.deletePhoto(photo, ctx.ownerIdentifier, ctx.isAdmin);
+
       setGalleryPhotos(prev => prev.filter(p => p.id !== photo.id));
       if (searchedPhoto?.id === photo.id) setSearchedPhoto(null);
     } catch (err: any) {
