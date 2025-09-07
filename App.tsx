@@ -71,6 +71,15 @@ const App: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  /* ---------- הרשאות מחיקה ---------- */
+  const canDeletePhoto = (photo: Photo): boolean => {
+    // אדמין יכול למחוק הכל
+    if (ctx.isAdmin) return true;
+    
+    // משתמש רגיל יכול למחוק רק תמונות שהוא העלה
+    return photo.owner_identifier === ctx.ownerIdentifier;
+  };
+
   /* ---------- טעינת גלריה פעילה (אם נשמרה) ---------- */
   useEffect(() => {
     if (ctx.gallery) {
@@ -304,7 +313,7 @@ const App: React.FC = () => {
           <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
             HumorizeMe - גרסה 2
           </h1>
-          <p className="text-gray-400 mt-2">תנו ל-AI לספר לכם מי אתם “באמת”...</p>
+          <p className="text-gray-400 mt-2">תנו ל-AI לספר לכם מי אתם "באמת"...</p>
         </header>
 
         {/* Gallery chooser / status bar */}
@@ -434,7 +443,6 @@ const App: React.FC = () => {
                     {isGenerating ? (
                       <div className="flex items-center justify-center gap-3 text-gray-300">
                         <Spinner />
-                        {/* טקסט טעינה מופיע כאן רק פעם אחת */}
                         הבינה המלאכותית חושבת...
                       </div>
                     ) : (
@@ -537,6 +545,7 @@ const App: React.FC = () => {
                     photo={searchedPhoto}
                     onDelete={handleDelete}
                     isDeleting={isDeleting === searchedPhoto.id}
+                    canDelete={canDeletePhoto(searchedPhoto)}
                   />
                 ) : (
                   <p className="text-center text-gray-400 mt-8">לא נמצאה תמונה עבור המשתמש שהוזן.</p>
@@ -552,6 +561,7 @@ const App: React.FC = () => {
                         photo={photo}
                         onDelete={handleDelete}
                         isDeleting={isDeleting === photo.id}
+                        canDelete={canDeletePhoto(photo)}
                       />
                     ))}
                   </div>
