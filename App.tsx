@@ -427,10 +427,9 @@ const App: React.FC = () => {
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
               <div>
                 <p className="text-lg">
-                  גלריה פעילה: <span className="font-bold text-purple-300">{ctx.gallery.name}</span>
                   {ctx.isAdmin && (
-                    <span className="ml-2 px-2 py-0.5 bg-amber-500/30 rounded text-amber-200 text-sm">
-                      Admin
+                    <span className="px-2 py-0.5 bg-amber-500/30 rounded text-amber-200 text-sm mr-2">
+                      סטטוס: Admin
                     </span>
                   )}
                 </p>
