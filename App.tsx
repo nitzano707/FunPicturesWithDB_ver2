@@ -84,6 +84,11 @@ const App: React.FC = () => {
               onClick={() => {
                 localStorage.setItem('user_agreed_to_terms', 'true');
                 setShowDisclaimer(false);
+                // בדוק אם יש קוד pending לאחר הסכמה
+                const pendingCode = localStorage.getItem('pending_gallery_code');
+                if (pendingCode) {
+                  setCurrentPage('gallery-active');
+                }
               }}
               className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg"
             >
