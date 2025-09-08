@@ -13,7 +13,6 @@ import SoloPlayerPage from './components/SoloPlayerPage';
 import Spinner from './components/Spinner';
 
 const App: React.FC = () => {
-  console.log('🚀 APP.TSX VERSION: 2025-01-09-LATEST - נטען!');
   const { user, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   const [selectedGallery, setSelectedGallery] = useState<Gallery | null>(null);
@@ -23,7 +22,6 @@ const App: React.FC = () => {
 
   // פונקציות ניווט
   const navigateToPage = (page: PageType, gallery?: Gallery) => {
-    console.log('🎯 navigateToPage called with:', { page, hasGallery: !!gallery, galleryName: gallery?.name });
     setCurrentPage(page);
     if (gallery) {
       setSelectedGallery(gallery);
@@ -40,7 +38,6 @@ const App: React.FC = () => {
     setIsSigningOut(true);
     try {
       await authService.signOut();
-      // חזרה לדף הבית לאחר התנתקות
       goHome();
     } catch (error) {
       console.error('Error signing out:', error);
@@ -61,11 +58,9 @@ const App: React.FC = () => {
     const handleAuthCallback = async () => {
       const hash = window.location.hash;
       if (hash.includes('access_token')) {
-        console.log('🔄 Auth callback detected, cleaning URL...');
         // תן לSupabase לעבד את הSession
         setTimeout(() => {
           window.history.replaceState({}, document.title, window.location.pathname);
-          console.log('✅ URL cleaned');
         }, 1000);
       }
     };
@@ -73,11 +68,14 @@ const App: React.FC = () => {
     handleAuthCallback();
   }, []);
 
-  // בדיקה אם המשתמש כבר הסכים לתנאים
+  // בדיקה אם המשתמש כבר הסכים לתנאים וטיפול בגלריה שמורה
   useEffect(() => {
     const userAgreed = localStorage.getItem('user_agreed_to_terms');
+    
     if (userAgreed === 'true') {
       setShowDisclaimer(false);
+    } else if (userAgreed === 'false') {
+      setDeclined(true);
     }
 
     // בדוק אם יש גלריה שמורה אחרי רענון הדף
@@ -86,7 +84,6 @@ const App: React.FC = () => {
       if (pendingGallery) {
         try {
           const gallery = JSON.parse(pendingGallery);
-          console.log('📋 Found pending gallery after refresh:', gallery.name);
           setSelectedGallery(gallery);
           setCurrentPage('gallery-active');
           localStorage.removeItem('pending_gallery');
@@ -97,7 +94,7 @@ const App: React.FC = () => {
       }
     };
 
-    // בדוק גלריה pending אחרי שהuser נטען (אם יש)
+    // בדוק גלריה pending אחרי שהuser נטען
     if (!loading) {
       checkPendingGallery();
     }
@@ -120,7 +117,6 @@ const App: React.FC = () => {
   }
 
   if (showDisclaimer) {
-    console.log('📝 Showing disclaimer');
     return (
       <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
         <div className="bg-gray-800 p-6 rounded-xl max-w-md text-center shadow-lg">
@@ -132,7 +128,6 @@ const App: React.FC = () => {
           <div className="flex justify-center gap-4">
             <button
               onClick={() => {
-                console.log('📝 User agreed to terms');
                 localStorage.setItem('user_agreed_to_terms', 'true');
                 setShowDisclaimer(false);
               }}
@@ -142,7 +137,6 @@ const App: React.FC = () => {
             </button>
             <button
               onClick={() => {
-                console.log('📝 User declined terms');
                 localStorage.setItem('user_agreed_to_terms', 'false');
                 setDeclined(true);
               }}
@@ -217,25 +211,19 @@ const App: React.FC = () => {
         )}
         
         {currentPage === 'captain-select' && (
-          <div>
-            {console.log('🧑‍✈️ About to render CaptainSelectPage')}
-            <CaptainSelectPage 
-              user={user} 
-              onNavigate={navigateToPage}
-              onGoHome={goHome}
-            />
-          </div>
+          <CaptainSelectPage 
+            user={user} 
+            onNavigate={navigateToPage}
+            onGoHome={goHome}
+          />
         )}
         
         {currentPage === 'gallery-setup' && (
-          <div>
-            {console.log('🔧 About to render GallerySetupPage')}
-            <GallerySetupPage 
-              user={user}
-              onNavigate={navigateToPage}
-              onGoHome={goHome}
-            />
-          </div>
+          <GallerySetupPage 
+            user={user}
+            onNavigate={navigateToPage}
+            onGoHome={goHome}
+          />
         )}
         
         {currentPage === 'gallery-active' && (
