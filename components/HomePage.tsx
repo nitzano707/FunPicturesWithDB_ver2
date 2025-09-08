@@ -112,6 +112,11 @@ const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
             האפליקציה מתאימה לפעילויות קבוצתיות בבית הספר, במשרד או עם חברים, 
             או לשימוש אישי וחופשי. כל התיאורים נכתבים בטון הומוריסטי וקליל.
           </p>
+           <img
+          src="/lol/humorizeme_photo.png"
+          alt="HumorizeMe Logo"
+          className="w-24 sm:w-[400px] h-auto"
+          />
         </div>
       </div>
     </div>
