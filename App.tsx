@@ -194,8 +194,6 @@ const App: React.FC = () => {
             gallery={selectedGallery}
             user={user}
             onGoHome={goHome}
-            autoJoinCode={autoJoinCode} // העברת הקוד לקומפוננטה
-            onAutoJoinComplete={() => setAutoJoinCode(null)} // ניקוי הקוד אחרי ההצטרפות
           />
         )}
         
