@@ -61,6 +61,14 @@ const App: React.FC = () => {
     }
   }, [user, showDisclaimer]);
 
+  // בדיקה אם המשתמש כבר הסכים לתנאים
+  useEffect(() => {
+    const userAgreed = localStorage.getItem('user_agreed_to_terms');
+    if (userAgreed === 'true') {
+      setShowDisclaimer(false);
+    }
+  }, []);
+
   // Disclaimer handling
   if (declined) {
     return (
@@ -84,15 +92,6 @@ const App: React.FC = () => {
               onClick={() => {
                 localStorage.setItem('user_agreed_to_terms', 'true');
                 setShowDisclaimer(false);
-                // בדוק אם יש קוד pending לאחר הסכמה
-                const pendingCode = localStorage.getItem('pending_gallery_code');
-                if (pendingCode) {
-                  // עבור ישירות לגלריה במקום לבחירת תפקיד
-                  setCurrentPage('gallery-active');
-                } else {
-                  // אם אין קוד pending, עבור לדף הבית כרגיל
-                  setCurrentPage('home');
-                }
               }}
               className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg"
             >
