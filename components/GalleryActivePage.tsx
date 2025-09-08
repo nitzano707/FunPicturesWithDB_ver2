@@ -651,7 +651,7 @@ const getWhatsAppMessage = () => {
               <h2 className="text-2xl font-bold text-purple-300">שם הגלריה: {gallery.name}</h2>
               <br />
               {gallery.creator_email && (
-                <span className="text-sm text-gray-400">האימייל של הקפטן - יוצר הגלריה הזו: {gallery.creator_email}</span>
+                <span className="text-sm text-gray-400">האימייל של הקפטן - יוצר הגלריה הזו:  <code className="text-gray-200">{gallery.creator_email}</code></span>
               )}
               {isAdmin && (
                 <span className="px-2 py-0.5 bg-amber-500/30 rounded text-amber-200 text-sm">
