@@ -136,8 +136,8 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
     setIsGenerating(true);
     try {
-      // TODO: Use gallery settings to customize prompt
-      const desc = await generateFunnyDescription(file);
+      // שימוש בהגדרות הגלריה אם קיימות
+      const desc = await generateFunnyDescription(file, gallery?.settings);
       setDescription(desc);
     } catch (err: any) {
       setError('שגיאה ביצירת התיאור: ' + err.message);
@@ -153,7 +153,8 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     setIsGenerating(true);
     setError(null);
     try {
-      const desc = await generateFunnyDescription(selectedFile);
+      // שימוש בהגדרות הגלריה אם קיימות
+      const desc = await generateFunnyDescription(selectedFile, gallery?.settings);
       setDescription(desc);
     } catch (err: any) {
       setError('שגיאה ביצירת התיאור: ' + err.message);
