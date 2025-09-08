@@ -68,13 +68,10 @@ export const authService = {
   // האזנה לשינויי Auth
   onAuthStateChange(callback: (user: User | null) => void) {
     return supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state change:', event, session?.user?.id);
-      
       // טיפול ב-callback אחרי Google OAuth
       if (event === 'SIGNED_IN' && session?.user) {
         // נקה את ה-URL מפרמטרי Auth
         if (window.location.hash.includes('access_token')) {
-          console.log('Cleaning auth params from URL');
           window.history.replaceState({}, document.title, window.location.pathname);
         }
         
@@ -104,15 +101,11 @@ export const authService = {
     try {
       // בדוק אם יש פרמטרי Auth ב-URL
       if (window.location.hash.includes('access_token')) {
-        console.log('Processing auth callback...');
-        
         // תן לSupabase לעבד את הSession
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('Auth callback error:', error);
-        } else {
-          console.log('Auth callback processed successfully');
         }
         
         // נקה את ה-URL
