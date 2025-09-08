@@ -79,7 +79,29 @@ const App: React.FC = () => {
     if (userAgreed === 'true') {
       setShowDisclaimer(false);
     }
-  }, []);
+
+    // בדוק אם יש גלריה שמורה אחרי רענון הדף
+    const checkPendingGallery = () => {
+      const pendingGallery = localStorage.getItem('pending_gallery');
+      if (pendingGallery) {
+        try {
+          const gallery = JSON.parse(pendingGallery);
+          console.log('📋 Found pending gallery after refresh:', gallery.name);
+          setSelectedGallery(gallery);
+          setCurrentPage('gallery-active');
+          localStorage.removeItem('pending_gallery');
+        } catch (e) {
+          console.error('Error parsing pending gallery:', e);
+          localStorage.removeItem('pending_gallery');
+        }
+      }
+    };
+
+    // בדוק גלריה pending אחרי שהuser נטען (אם יש)
+    if (!loading) {
+      checkPendingGallery();
+    }
+  }, [loading]);
 
   // אם משתמש מחובר - לא להציג דיסקליימר
   useEffect(() => {
