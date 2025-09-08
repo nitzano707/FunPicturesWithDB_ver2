@@ -58,11 +58,6 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     return photo.owner_identifier === ownerIdentifier;
   };
 
-  // בדיקה זמנית
-  console.log('isAdmin:', isAdmin);
-  console.log('gallery:', gallery?.name);
-  console.log('user:', user?.email);
-
   // Load gallery photos when gallery changes
   useEffect(() => {
     if (gallery) {
@@ -73,13 +68,29 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     }
   }, [gallery]);
 
+  // Check for pending gallery code from localStorage
+  useEffect(() => {
+    const pendingCode = localStorage.getItem('pending_gallery_code');
+    if (pendingCode && !gallery) {
+      console.log('Found pending gallery code:', pendingCode);
+      setJoinCode(pendingCode);
+      localStorage.removeItem('pending_gallery_code');
+      // Auto-join the gallery
+      handleJoinGalleryByCode(pendingCode);
+    }
+  }, []);
+
   // Join gallery by share code
   const handleJoinGallery = async () => {
     if (!joinCode.trim()) {
       setError('יש להזין קוד שיתוף.');
       return;
     }
+    await handleJoinGalleryByCode(joinCode.trim().toUpperCase());
+  };
 
+  // Separate function for joining by code
+  const handleJoinGalleryByCode = useCallback(async (code: string) => {
     setIsLoading(true);
     setError(null);
 
@@ -87,7 +98,7 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
       const { data, error } = await supabase
         .from('galleries')
         .select('*')
-        .eq('share_code', joinCode.trim().toUpperCase())
+        .eq('share_code', code)
         .single();
 
       if (error || !data) {
@@ -102,7 +113,7 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   // Load gallery photos
   const loadGalleryPhotos = useCallback(async () => {
@@ -142,7 +153,6 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
     setIsGenerating(true);
     try {
-      // שימוש בהגדרות הגלריה אם קיימות
       const desc = await generateFunnyDescription(file, gallery?.settings);
       setDescription(desc);
     } catch (err: any) {
@@ -159,7 +169,6 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     setIsGenerating(true);
     setError(null);
     try {
-      // שימוש בהגדרות הגלריה אם קיימות
       const desc = await generateFunnyDescription(selectedFile, gallery?.settings);
       setDescription(desc);
     } catch (err: any) {
@@ -273,13 +282,11 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
     try {
       if (isAdmin) {
-        // אדמין: קבל את קוד האדמין מהגלריה
         const adminCode = gallery?.admin_code;
         if (!adminCode) {
           throw new Error('Could not verify admin permissions');
         }
 
-        // השתמש ב-RPC עם בדיקת אדמין
         const { error: rpcError } = await supabase
           .rpc('delete_photo_with_admin_check', {
             photo_id: photo.id,
@@ -292,7 +299,6 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
           throw new Error(`Admin delete failed: ${rpcError.message}`);
         }
       } else {
-        // משתמש רגיל: השתמש ב-RPC ללא קוד אדמין
         const { error: rpcError } = await supabase
           .rpc('delete_photo_with_admin_check', {
             photo_id: photo.id,
@@ -306,7 +312,6 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
         }
       }
 
-      // מחיקת הקובץ מה-Storage גם כן
       const url = new URL(photo.image_url);
       const pathParts = url.pathname.split('/');
       const fileName = pathParts[pathParts.length - 1];
@@ -314,7 +319,6 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
       await supabase.storage.from('photos').remove([storagePath]);
 
-      // Update UI
       setGalleryPhotos(prev => prev.filter(p => p.id !== photo.id));
       if (searchedPhoto?.id === photo.id) setSearchedPhoto(null);
 
@@ -327,51 +331,88 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
   // Delete gallery (admin only)
   const handleDeleteGallery = async () => {
-    if (!gallery || !isAdmin) return;
+    if (!gallery || !isAdmin) {
+      setError('אין הרשאה למחוק גלריה זו.');
+      return;
+    }
     
-    const confirmMessage = `האם אתה בטוח שברצונך למחוק את הגלריה "${gallery.name}"? פעולה זו בלתי הפיכה ותמחק את כל התמונות!`;
+    const confirmMessage = `האם אתה בטוח שברצונך למחוק את הגלריה "${gallery.name}"?\n\nפעולה זו בלתי הפיכה ותמחק:\n- את כל התמונות בגלריה\n- את הגלריה עצמה\n- את כל הנתונים הקשורים\n\nהאם להמשיך?`;
     if (!window.confirm(confirmMessage)) return;
 
     setIsDeletingGallery(true);
     setError(null);
 
     try {
-      // מחיקת כל התמונות של הגלריה מה-Storage
-      const { data: photos } = await supabase
+      console.log('Starting gallery deletion for:', gallery.id);
+
+      const { data: photos, error: photosSelectError } = await supabase
         .from('photos')
         .select('image_url')
         .eq('gallery_id', gallery.id);
 
-      if (photos && photos.length > 0) {
-        const storagePaths = photos.map(photo => {
-          const url = new URL(photo.image_url);
-          const pathParts = url.pathname.split('/');
-          const fileName = pathParts[pathParts.length - 1];
-          return `${gallery.id}/${fileName}`;
-        });
-
-        await supabase.storage.from('photos').remove(storagePaths);
+      if (photosSelectError) {
+        console.error('Error fetching photos:', photosSelectError);
+        throw new Error('שגיאה בקבלת רשימת התמונות: ' + photosSelectError.message);
       }
 
-      // מחיקת כל התמונות מהדאטהבייס
-      const { error: photosError } = await supabase
+      console.log('Found photos to delete:', photos?.length || 0);
+
+      if (photos && photos.length > 0) {
+        const storagePaths = photos.map(photo => {
+          try {
+            const url = new URL(photo.image_url);
+            const pathParts = url.pathname.split('/');
+            const fileName = pathParts[pathParts.length - 1];
+            return `${gallery.id}/${fileName}`;
+          } catch (urlError) {
+            console.warn('Error parsing photo URL:', photo.image_url, urlError);
+            return null;
+          }
+        }).filter(Boolean) as string[];
+
+        console.log('Storage paths to delete:', storagePaths);
+
+        if (storagePaths.length > 0) {
+          const { error: storageError } = await supabase.storage
+            .from('photos')
+            .remove(storagePaths);
+
+          if (storageError) {
+            console.warn('Storage deletion failed (continuing anyway):', storageError);
+          } else {
+            console.log('Storage files deleted successfully');
+          }
+        }
+      }
+
+      const { error: photosDeleteError } = await supabase
         .from('photos')
         .delete()
         .eq('gallery_id', gallery.id);
 
-      if (photosError) throw photosError;
+      if (photosDeleteError) {
+        console.error('Error deleting photos from DB:', photosDeleteError);
+        throw new Error('שגיאה במחיקת התמונות מהדאטהבייס: ' + photosDeleteError.message);
+      }
 
-      // מחיקת הגלריה עצמה
-      const { error: galleryError } = await supabase
+      console.log('Photos deleted from database successfully');
+
+      const { error: galleryDeleteError } = await supabase
         .from('galleries')
         .delete()
         .eq('id', gallery.id);
 
-      if (galleryError) throw galleryError;
+      if (galleryDeleteError) {
+        console.error('Error deleting gallery:', galleryDeleteError);
+        throw new Error('שגיאה במחיקת הגלריה: ' + galleryDeleteError.message);
+      }
 
-      // חזרה לעמוד הבית
+      console.log('Gallery deleted successfully');
+      alert('הגלריה נמחקה בהצלחה!');
       onGoHome();
+
     } catch (err: any) {
+      console.error('Gallery deletion error:', err);
       setError('שגיאה במחיקת הגלריה: ' + err.message);
     } finally {
       setIsDeletingGallery(false);
@@ -544,7 +585,6 @@ ${url}
                             text: message,
                             url: url
                           }).catch(() => {
-                            // Fallback if sharing fails
                             navigator.clipboard.writeText(message);
                             alert('הודעה הועתקה ללוח!');
                           });
