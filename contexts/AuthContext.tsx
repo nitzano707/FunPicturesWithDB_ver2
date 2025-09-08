@@ -29,22 +29,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // בדוק אם יש משתמש מחובר בעת טעינת האפליקציה
-    const checkUser = async () => {
-      const currentUser = await authService.getCurrentUser();
-      setUser(currentUser);
-      setLoading(false);
+    let mounted = true;
+
+    const initAuth = async () => {
+      try {
+        // טפל בauth callback אם קיים
+        await authService.handleAuthCallback();
+        
+        // בדוק אם יש משתמש מחובר
+        const currentUser = await authService.getCurrentUser();
+        if (mounted) {
+          setUser(currentUser);
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        if (mounted) {
+          setUser(null);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
     };
 
-    checkUser();
+    initAuth();
 
     // האזן לשינויי התחברות
     const { data: { subscription } } = authService.onAuthStateChange((newUser) => {
-      setUser(newUser);
-      setLoading(false);
+      if (mounted) {
+        console.log('Auth state changed to:', newUser?.email || 'signed out');
+        setUser(newUser);
+        setLoading(false);
+      }
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
