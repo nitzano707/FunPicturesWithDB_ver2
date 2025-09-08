@@ -222,11 +222,14 @@ const App: React.FC = () => {
         )}
         
         {currentPage === 'gallery-setup' && (
-          <GallerySetupPage 
-            user={user}
-            onNavigate={navigateToPage}
-            onGoHome={goHome}
-          />
+          <div>
+            {console.log('🔧 About to render GallerySetupPage')}
+            <GallerySetupPage 
+              user={user}
+              onNavigate={navigateToPage}
+              onGoHome={goHome}
+            />
+          </div>
         )}
         
         {currentPage === 'gallery-active' && (
