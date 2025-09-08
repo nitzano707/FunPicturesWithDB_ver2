@@ -644,7 +644,7 @@ const getWhatsAppMessage = () => {
       {/* Gallery info header */}
       <div className="mb-8 bg-white/5 p-4 rounded-xl border border-white/10">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-         <!-- <div>
+         /* <div>
             <h2 className="text-2xl font-bold text-purple-300 mb-2">{gallery.name}</h2>
             {isAdmin && (
               <span className="px-2 py-0.5 bg-amber-500/30 rounded text-amber-200 text-sm mr-2">
@@ -661,7 +661,7 @@ const getWhatsAppMessage = () => {
               )}
             </div>
           </div>
-          -->
+          */
 
           <div>
             <div className="flex items-center gap-3 mb-2">
