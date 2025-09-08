@@ -15,7 +15,6 @@ interface GalleryActivePageProps {
 }
 
 const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialGallery, user, onGoHome }) => {
-  // State for gallery/context
   const [gallery, setGallery] = useState<Gallery | null>(initialGallery || null);
   const [joinCode, setJoinCode] = useState('');
   const [ownerIdentifier] = useState(() => {
@@ -27,43 +26,31 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     return fresh;
   });
 
-  // Gallery state
   const [galleryPhotos, setGalleryPhotos] = useState<Photo[]>([]);
   const [searchedPhoto, setSearchedPhoto] = useState<Photo | null>(null);
   const [viewMode, setViewMode] = useState<'welcome' | 'search' | 'gallery'>('welcome');
 
-  // Upload state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [description, setDescription] = useState<string>('');
   const [username, setUsername] = useState<string>('');
   const [searchUsername, setSearchUsername] = useState<string>('');
 
-  // Loading states
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const [isDeletingGallery, setIsDeletingGallery] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if user is admin
   const isAdmin = user && gallery && (
     gallery.creator_google_id === user.id || 
     gallery.creator_identifier === ownerIdentifier
   );
 
-  // Permission check for deleting photos
   const canDeletePhoto = (photo: Photo): boolean => {
     if (isAdmin) return true;
     return photo.owner_identifier === ownerIdentifier;
   };
 
-  // בדיקה זמנית
-  console.log('isAdmin:', isAdmin);
-  console.log('gallery:', gallery?.name);
-  console.log('user:', user?.email);
-
-  // Load gallery photos when gallery changes
   useEffect(() => {
     if (gallery) {
       setViewMode('gallery');
@@ -73,28 +60,23 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     }
   }, [gallery]);
 
-  // Join gallery by share code
   const handleJoinGallery = async () => {
     if (!joinCode.trim()) {
       setError('יש להזין קוד שיתוף.');
       return;
     }
-
     setIsLoading(true);
     setError(null);
-
     try {
       const { data, error } = await supabase
         .from('galleries')
         .select('*')
         .eq('share_code', joinCode.trim().toUpperCase())
         .single();
-
       if (error || !data) {
         setError('לא נמצאה גלריה עם הקוד שסופק.');
         return;
       }
-
       setGallery(data);
       setJoinCode('');
     } catch (err: any) {
@@ -104,21 +86,17 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     }
   };
 
-  // Load gallery photos
   const loadGalleryPhotos = useCallback(async () => {
     if (!gallery) return;
-
     setIsLoading(true);
     setError(null);
     setSearchedPhoto(null);
-
     try {
       const { data, error } = await supabase
         .from('photos')
         .select('*')
         .eq('gallery_id', gallery.id)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
       setGalleryPhotos(data || []);
       setViewMode('gallery');
@@ -130,19 +108,15 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     }
   }, [gallery]);
 
-  // Handle image upload
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     setError(null);
     setDescription('');
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
-
     setIsGenerating(true);
     try {
-      // שימוש בהגדרות הגלריה אם קיימות
       const desc = await generateFunnyDescription(file, gallery?.settings);
       setDescription(desc);
     } catch (err: any) {
@@ -152,14 +126,11 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     }
   };
 
-  // Regenerate description
   const handleRegenerate = async () => {
     if (!selectedFile) return;
-
     setIsGenerating(true);
     setError(null);
     try {
-      // שימוש בהגדרות הגלריה אם קיימות
       const desc = await generateFunnyDescription(selectedFile, gallery?.settings);
       setDescription(desc);
     } catch (err: any) {
@@ -169,7 +140,6 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     }
   };
 
-  // Save photo to gallery
   const handleSave = async () => {
     if (!gallery) {
       setError('שגיאה: אין גלריה פעילה.');
@@ -179,29 +149,20 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
       setError('יש למלא שם, להעלות תמונה ולהמתין ליצירת תיאור לפני שמירה.');
       return;
     }
-
     setIsLoading(true);
     setError(null);
-
     try {
       const ext = selectedFile.name.split('.').pop() || 'png';
       const fileName = `${uuidv4()}.${ext}`;
       const filePath = `${gallery.id}/${fileName}`;
-
-      // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from('photos')
         .upload(filePath, selectedFile);
-
       if (uploadError) throw uploadError;
-
-      // Get public URL
       const { data: publicUrlData } = supabase.storage
         .from('photos')
         .getPublicUrl(filePath);
-
-      // Save to database
-      const { data, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('photos')
         .insert([{
           gallery_id: gallery.id,
@@ -212,18 +173,12 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
         }])
         .select()
         .single();
-
       if (insertError) throw insertError;
-
-      // Reset form
       setSelectedFile(null);
       setPreviewUrl(null);
       setDescription('');
       setUsername('');
-
-      // Reload gallery
       await loadGalleryPhotos();
-
     } catch (err: any) {
       setError('שגיאה בשמירת התמונה: ' + err.message);
     } finally {
@@ -231,18 +186,15 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     }
   };
 
-  // Search for photo by username
   const handleSearch = async () => {
     if (!gallery) return;
     if (!searchUsername.trim()) {
       setError('יש להזין שם משתמש לחיפוש.');
       return;
     }
-
     setIsLoading(true);
     setError(null);
     setGalleryPhotos([]);
-
     try {
       const { data, error } = await supabase
         .from('photos')
@@ -252,7 +204,6 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
-
       if (error && error.code !== 'PGRST116') throw error;
       setSearchedPhoto(data || null);
       setViewMode('search');
@@ -264,60 +215,37 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     }
   };
 
-  // Delete photo
   const handleDelete = async (photo: Photo) => {
     if (!window.confirm(`למחוק את התמונה של ${photo.username}?`)) return;
-
     setIsDeleting(photo.id);
     setError(null);
-
     try {
       if (isAdmin) {
-        // אדמין: קבל את קוד האדמין מהגלריה
         const adminCode = gallery?.admin_code;
-        if (!adminCode) {
-          throw new Error('Could not verify admin permissions');
-        }
-
-        // השתמש ב-RPC עם בדיקת אדמין
-        const { error: rpcError } = await supabase
-          .rpc('delete_photo_with_admin_check', {
-            photo_id: photo.id,
-            owner_identifier: ownerIdentifier,
-            is_admin: true,
-            admin_code: adminCode
-          });
-
-        if (rpcError) {
-          throw new Error(`Admin delete failed: ${rpcError.message}`);
-        }
+        if (!adminCode) throw new Error('Could not verify admin permissions');
+        const { error: rpcError } = await supabase.rpc('delete_photo_with_admin_check', {
+          photo_id: photo.id,
+          owner_identifier: ownerIdentifier,
+          is_admin: true,
+          admin_code: adminCode
+        });
+        if (rpcError) throw new Error(`Admin delete failed: ${rpcError.message}`);
       } else {
-        // משתמש רגיל: השתמש ב-RPC ללא קוד אדמין
-        const { error: rpcError } = await supabase
-          .rpc('delete_photo_with_admin_check', {
-            photo_id: photo.id,
-            owner_identifier: ownerIdentifier,
-            is_admin: false,
-            admin_code: null
-          });
-
-        if (rpcError) {
-          throw new Error(`Delete failed: ${rpcError.message}`);
-        }
+        const { error: rpcError } = await supabase.rpc('delete_photo_with_admin_check', {
+          photo_id: photo.id,
+          owner_identifier: ownerIdentifier,
+          is_admin: false,
+          admin_code: null
+        });
+        if (rpcError) throw new Error(`Delete failed: ${rpcError.message}`);
       }
-
-      // מחיקת הקובץ מה-Storage גם כן
       const url = new URL(photo.image_url);
       const pathParts = url.pathname.split('/');
       const fileName = pathParts[pathParts.length - 1];
       const storagePath = `${photo.gallery_id}/${fileName}`;
-
       await supabase.storage.from('photos').remove([storagePath]);
-
-      // Update UI
       setGalleryPhotos(prev => prev.filter(p => p.id !== photo.id));
       if (searchedPhoto?.id === photo.id) setSearchedPhoto(null);
-
     } catch (err: any) {
       setError('שגיאה במחיקת התמונה: ' + err.message);
     } finally {
@@ -325,57 +253,34 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     }
   };
 
-  // If no gallery, show join interface
+  // === Render ===
   if (!gallery) {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="bg-white/10 rounded-2xl p-8 border border-teal-500/30 backdrop-blur-sm">
           <div className="text-center">
-            <div className="w-20 h-20 mx-auto mb-6 bg-teal-500/20 rounded-full flex items-center justify-center">
-              <svg className="w-10 h-10 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-            
             <h2 className="text-3xl font-bold text-teal-300 mb-4">הצטרפות לגלריה</h2>
-            <p className="text-gray-300 mb-8 leading-relaxed">
-              הזן את קוד השיתוף שקיבלת מהקפטן כדי להצטרף לגלריה הקבוצתית
-            </p>
-
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="קוד שיתוף (Share-Code)"
-                value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value)}
-                className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white focus:ring-teal-500 focus:border-teal-500 text-center text-lg font-mono"
-              />
-
-              {isLoading ? (
-                <Spinner />
-              ) : (
-                <button
-                  onClick={handleJoinGallery}
-                  disabled={!joinCode.trim()}
-                  className="w-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  הצטרף לגלריה
-                </button>
-              )}
-            </div>
-
-            {error && (
-              <div className="mt-6 bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg">
-                {error}
-              </div>
-            )}
+            <input
+              type="text"
+              placeholder="קוד שיתוף (Share-Code)"
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value)}
+              className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white text-center"
+            />
+            <button
+              onClick={handleJoinGallery}
+              disabled={!joinCode.trim() || isLoading}
+              className="mt-4 w-full bg-gradient-to-r from-teal-600 to-cyan-600 text-white py-3 px-6 rounded-xl"
+            >
+              {isLoading ? 'טוען...' : 'הצטרף לגלריה'}
+            </button>
+            {error && <div className="mt-4 text-red-300">{error}</div>}
           </div>
         </div>
       </div>
     );
   }
 
-  // Main gallery interface
   return (
     <div className="max-w-7xl mx-auto">
       {/* Gallery info header */}
