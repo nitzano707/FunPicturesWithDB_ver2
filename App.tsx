@@ -23,6 +23,7 @@ const App: React.FC = () => {
 
   // פונקציות ניווט
   const navigateToPage = (page: PageType, gallery?: Gallery) => {
+    console.log('🎯 navigateToPage called with:', { page, hasGallery: !!gallery, galleryName: gallery?.name });
     setCurrentPage(page);
     if (gallery) {
       setSelectedGallery(gallery);
