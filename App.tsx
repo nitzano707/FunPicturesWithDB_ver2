@@ -169,7 +169,7 @@ const App: React.FC = () => {
           
           <div className="flex-1 text-center">
             <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
-              HumorizeMe - גרסה 2
+              HumorizeMe
             </h1>
             <p className="text-gray-400 mt-2">תנו ל-AI לספר לכם מי אתם "באמת"...</p>
           </div>
