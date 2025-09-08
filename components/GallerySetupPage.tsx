@@ -4,6 +4,7 @@ import { supabase } from '../services/supabaseService';
 import type { PageType, Gallery, User, GallerySettings } from '../types';
 import { getDefaultGallerySettings } from '../utils/defaultSettings';
 import Spinner from './Spinner';
+import { v4 as uuidv4 } from 'uuid';
 
 interface GallerySetupPageProps {
   user: User | null;
@@ -16,6 +17,16 @@ const GallerySetupPage: React.FC<GallerySetupPageProps> = ({ user, onNavigate, o
   const [settings, setSettings] = useState<GallerySettings>(getDefaultGallerySettings());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Owner identifier for backup
+  const [ownerIdentifier] = useState(() => {
+    const k = 'owner_identifier_v1';
+    const existing = localStorage.getItem(k);
+    if (existing) return existing;
+    const fresh = uuidv4();
+    localStorage.setItem(k, fresh);
+    return fresh;
+  });
 
   const updateSettings = (key: keyof GallerySettings, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -43,9 +54,13 @@ const GallerySetupPage: React.FC<GallerySetupPageProps> = ({ user, onNavigate, o
     setError(null);
 
     try {
+      console.log('Creating gallery for user:', user.id, user.email);
+
       // יצירת קודים ייחודיים
       const shareCode = generateCode(6);
       const adminCode = generateCode(8);
+
+      console.log('Generated codes:', { shareCode, adminCode });
 
       // יצירת הגלריה
       const { data: gallery, error: insertError } = await supabase
@@ -56,18 +71,26 @@ const GallerySetupPage: React.FC<GallerySetupPageProps> = ({ user, onNavigate, o
           admin_code: adminCode,
           creator_google_id: user.id,
           creator_email: user.email,
-          creator_identifier: user.id, // גיבוי
+          creator_identifier: ownerIdentifier,
           settings: settings
         }])
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Insert error:', insertError);
+        throw insertError;
+      }
 
-      // מעבר לגלריה החדשה
-      onNavigate('gallery-active', gallery);
+      console.log('Gallery created successfully:', gallery);
+
+      // מעבר לגלריה החדשה - עם דיליי קטן כדי להבטיח שהState יתעדכן
+      setTimeout(() => {
+        onNavigate('gallery-active', gallery);
+      }, 100);
 
     } catch (err: any) {
+      console.error('Create gallery error:', err);
       setError('שגיאה ביצירת הגלריה: ' + err.message);
     } finally {
       setLoading(false);
@@ -99,6 +122,7 @@ const GallerySetupPage: React.FC<GallerySetupPageProps> = ({ user, onNavigate, o
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-green-300 mb-2">יצירת גלריה חדשה</h2>
         <p className="text-gray-300">התאם הגדרות לקבוצה שלך</p>
+        <p className="text-sm text-gray-400 mt-2">מחובר כ: {user.name || user.email}</p>
       </div>
 
       {error && (
@@ -221,7 +245,7 @@ const GallerySetupPage: React.FC<GallerySetupPageProps> = ({ user, onNavigate, o
                 onChange={(e) => updateSettings('tone', e.target.value)}
                 className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500"
               >
-                <option value="encouraging">חנוכמעודד</option>
+                <option value="encouraging">מעודד</option>
                 <option value="standup">סטנד-אפ</option>
                 <option value="satirical">סאטירי קליל</option>
                 <option value="poetic">פיוטי</option>
