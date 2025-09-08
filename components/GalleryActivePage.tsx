@@ -43,7 +43,11 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isDeletingGallery, setIsDeletingGallery] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Share modal state
+  const [showShareModal, setShowShareModal] = useState<boolean>(false);
 
   // Check if user is admin
   const isAdmin = user && gallery && (
@@ -57,9 +61,53 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     return photo.owner_identifier === ownerIdentifier;
   };
 
+  // Generate gallery URL
+  const getGalleryUrl = () => {
+    if (!gallery) return '';
+    return `${window.location.origin}?join=${gallery.share_code}`;
+  };
+
+  // Generate QR code URL
+  const getQRCodeUrl = () => {
+    const url = getGalleryUrl();
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+  };
+
+  // Generate WhatsApp message
+  const getWhatsAppMessage = () => {
+    if (!gallery) return '';
+    const url = getGalleryUrl();
+    return `היי! הצטרף לגלריית התמונות שלנו "${gallery.name}" 📸\n\nלינק: ${url}\n\nאו הכנס ידנית את קוד השיתוף: ${gallery.share_code}\n\nבאפליקציה: HumorizeMe`;
+  };
+
+  // Generate WhatsApp URL
+  const getWhatsAppUrl = () => {
+    const message = getWhatsAppMessage();
+    return `https://wa.me/?text=${encodeURIComponent(message)}`;
+  };
+
+  // Copy to clipboard
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      alert('הועתק בהצלחה!');
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      alert('שגיאה בהעתקה');
+    }
+  };
+
   // Load gallery photos when gallery changes
   useEffect(() => {
-    // טיפול ב-Auth callback אם קיים
+    // Check for join code in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const joinCodeFromUrl = urlParams.get('join');
+    if (joinCodeFromUrl && !gallery) {
+      setJoinCode(joinCodeFromUrl);
+      handleJoinGalleryByCode(joinCodeFromUrl);
+    }
+
+    // Clean auth params
     const cleanAuthParams = () => {
       if (window.location.hash.includes('access_token')) {
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -77,12 +125,7 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
   }, [gallery]);
 
   // Join gallery by share code
-  const handleJoinGallery = async () => {
-    if (!joinCode.trim()) {
-      setError('יש להזין קוד שיתוף.');
-      return;
-    }
-
+  const handleJoinGalleryByCode = async (code: string) => {
     setIsLoading(true);
     setError(null);
 
@@ -90,7 +133,7 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
       const { data, error } = await supabase
         .from('galleries')
         .select('*')
-        .eq('share_code', joinCode.trim().toUpperCase())
+        .eq('share_code', code.toUpperCase())
         .single();
 
       if (error || !data) {
@@ -100,10 +143,55 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
       setGallery(data);
       setJoinCode('');
+      
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
     } catch (err: any) {
       setError('שגיאה בהצטרפות לגלריה: ' + err.message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Join gallery by share code
+  const handleJoinGallery = async () => {
+    if (!joinCode.trim()) {
+      setError('יש להזין קוד שיתוף.');
+      return;
+    }
+
+    await handleJoinGalleryByCode(joinCode.trim());
+  };
+
+  // Delete entire gallery
+  const handleDeleteGallery = async () => {
+    if (!gallery || !isAdmin) return;
+
+    const confirmMessage = `האם אתה בטוח שברצונך למחוק את הגלריה "${gallery.name}" לגמרי?\n\nפעולה זו תמחק:\n- את כל התמונות בגלריה\n- את הגלריה עצמה\n\nפעולה זו לא ניתנת לביטול!`;
+    
+    if (!window.confirm(confirmMessage)) return;
+
+    setIsDeletingGallery(true);
+    setError(null);
+
+    try {
+      const { error: rpcError } = await supabase
+        .rpc('delete_entire_gallery', {
+          gallery_id: gallery.id,
+          admin_code: gallery.admin_code
+        });
+
+      if (rpcError) {
+        throw new Error(`Gallery delete failed: ${rpcError.message}`);
+      }
+
+      alert('הגלריה נמחקה בהצלחה!');
+      onGoHome();
+
+    } catch (err: any) {
+      setError('שגיאה במחיקת הגלריה: ' + err.message);
+    } finally {
+      setIsDeletingGallery(false);
     }
   };
 
@@ -145,7 +233,6 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
     setIsGenerating(true);
     try {
-      // שימוש בהגדרות הגלריה אם קיימות
       const desc = await generateFunnyDescription(file, gallery?.settings);
       setDescription(desc);
     } catch (err: any) {
@@ -162,7 +249,6 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     setIsGenerating(true);
     setError(null);
     try {
-      // שימוש בהגדרות הגלריה אם קיימות
       const desc = await generateFunnyDescription(selectedFile, gallery?.settings);
       setDescription(desc);
     } catch (err: any) {
@@ -191,19 +277,16 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
       const fileName = `${uuidv4()}.${ext}`;
       const filePath = `${gallery.id}/${fileName}`;
 
-      // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from('photos')
         .upload(filePath, selectedFile);
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: publicUrlData } = supabase.storage
         .from('photos')
         .getPublicUrl(filePath);
 
-      // Save to database
       const { data, error: insertError } = await supabase
         .from('photos')
         .insert([{
@@ -218,13 +301,11 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
       if (insertError) throw insertError;
 
-      // Reset form
       setSelectedFile(null);
       setPreviewUrl(null);
       setDescription('');
       setUsername('');
 
-      // Reload gallery
       await loadGalleryPhotos();
 
     } catch (err: any) {
@@ -276,13 +357,11 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
     try {
       if (isAdmin) {
-        // אדמין: קבל את קוד האדמין מהגלריה
         const adminCode = gallery?.admin_code;
         if (!adminCode) {
           throw new Error('Could not verify admin permissions');
         }
 
-        // השתמש ב-RPC עם בדיקת אדמין
         const { error: rpcError } = await supabase
           .rpc('delete_photo_with_admin_check', {
             photo_id: photo.id,
@@ -295,7 +374,6 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
           throw new Error(`Admin delete failed: ${rpcError.message}`);
         }
       } else {
-        // משתמש רגיל: השתמש ב-RPC ללא קוד אדמין
         const { error: rpcError } = await supabase
           .rpc('delete_photo_with_admin_check', {
             photo_id: photo.id,
@@ -309,7 +387,6 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
         }
       }
 
-      // מחיקת הקובץ מה-Storage גם כן
       const url = new URL(photo.image_url);
       const pathParts = url.pathname.split('/');
       const fileName = pathParts[pathParts.length - 1];
@@ -317,7 +394,6 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
       await supabase.storage.from('photos').remove([storagePath]);
 
-      // Update UI
       setGalleryPhotos(prev => prev.filter(p => p.id !== photo.id));
       if (searchedPhoto?.id === photo.id) setSearchedPhoto(null);
 
@@ -326,6 +402,109 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     } finally {
       setIsDeleting(null);
     }
+  };
+
+  // Share Modal Component
+  const ShareModal = () => {
+    if (!showShareModal || !gallery) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+        <div className="bg-gray-800 rounded-xl max-w-md w-full p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-bold text-white">שתף את הגלריה</h3>
+            <button
+              onClick={() => setShowShareModal(false)}
+              className="text-gray-400 hover:text-white text-xl"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {/* Gallery Link */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">קישור לגלריה</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={getGalleryUrl()}
+                  readOnly
+                  className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                />
+                <button
+                  onClick={() => copyToClipboard(getGalleryUrl())}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm"
+                >
+                  העתק
+                </button>
+              </div>
+            </div>
+
+            {/* Share Code */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">קוד שיתוף</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={gallery.share_code}
+                  readOnly
+                  className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm font-mono text-center"
+                />
+                <button
+                  onClick={() => copyToClipboard(gallery.share_code)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm"
+                >
+                  העתק
+                </button>
+              </div>
+            </div>
+
+            {/* QR Code */}
+            <div className="text-center">
+              <label className="block text-sm font-medium text-gray-300 mb-2">QR Code</label>
+              <div className="bg-white p-4 rounded-lg inline-block">
+                <img 
+                  src={getQRCodeUrl()} 
+                  alt="QR Code" 
+                  className="w-48 h-48"
+                />
+              </div>
+              <p className="text-xs text-gray-400 mt-2">סרוק עם המצלמה כדי להצטרף</p>
+            </div>
+
+            {/* WhatsApp */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">הודעת WhatsApp</label>
+              <div className="space-y-2">
+                <textarea
+                  value={getWhatsAppMessage()}
+                  readOnly
+                  rows={4}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm resize-none"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => copyToClipboard(getWhatsAppMessage())}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm"
+                  >
+                    העתק הודעה
+                  </button>
+                  <a
+                    href={getWhatsAppUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm text-center"
+                  >
+                    פתח WhatsApp
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // If no gallery, show join interface
@@ -401,16 +580,31 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
               )}
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <button 
+              onClick={() => setShowShareModal(true)}
+              className="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded text-white text-sm"
+            >
+              שתף גלריה
+            </button>
             <button 
               onClick={loadGalleryPhotos} 
-              className="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded"
+              className="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-white text-sm"
             >
               רענן גלריה
             </button>
+            {isAdmin && (
+              <button 
+                onClick={handleDeleteGallery}
+                disabled={isDeletingGallery}
+                className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded text-white text-sm disabled:opacity-50"
+              >
+                {isDeletingGallery ? 'מוחק...' : 'מחק גלריה'}
+              </button>
+            )}
             <button 
               onClick={onGoHome} 
-              className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded"
+              className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded text-white text-sm"
             >
               עזוב גלריה
             </button>
@@ -584,6 +778,9 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
           </div>
         </div>
       </div>
+
+      {/* Share Modal */}
+      <ShareModal />
     </div>
   );
 };
