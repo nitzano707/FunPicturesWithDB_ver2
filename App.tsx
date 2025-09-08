@@ -6,10 +6,10 @@ import type { PageType, Gallery } from './types';
 // Import של הקומפוננטים
 import HomePage from './components/HomePage';
 import CaptainSelectPage from './components/CaptainSelectPage';
+import GallerySetupPage from './components/GallerySetupPage';
 import Spinner from './components/Spinner';
 
 // קומפוננטים זמניים עד שניצור אותם
-const GallerySetupPage = () => <div>Gallery Setup - בבנייה</div>;
 const GalleryActivePage = () => <div>Gallery Active - בבנייה</div>;
 const SoloPlayerPage = () => <div>Solo Player - בבנייה</div>;
 
