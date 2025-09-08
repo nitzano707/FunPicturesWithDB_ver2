@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../services/supabaseService';
 import { generateFunnyDescription } from '../services/geminiService';
-import type { Gallery, Photo, User, ClientContext } from '../types';
+import type { Gallery, Photo, User } from '../types';
 import PhotoCard from './PhotoCard';
 import Spinner from './Spinner';
 import { UploadIcon, SaveIcon, SearchIcon, GalleryIcon } from './icons';
@@ -16,7 +16,7 @@ interface GalleryActivePageProps {
 
 const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialGallery, user, onGoHome }) => {
   // State for gallery/context
-  const [gallery, setGallery] = useState<Gallery | null>(initialGallery || null);
+  const [gallery, setGallery] = useState<Gallery | null>(null);
   const [joinCode, setJoinCode] = useState('');
   const [ownerIdentifier] = useState(() => {
     const k = 'owner_identifier_v1';
@@ -43,8 +43,19 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const [isDeletingGallery, setIsDeletingGallery] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Initialize gallery from props
+  useEffect(() => {
+    console.log('GalleryActivePage mounted with gallery:', initialGallery);
+    if (initialGallery) {
+      setGallery(initialGallery);
+      setViewMode('gallery');
+    } else {
+      setGallery(null);
+      setViewMode('welcome');
+    }
+  }, [initialGallery]);
 
   // Check if user is admin
   const isAdmin = user && gallery && (
@@ -61,10 +72,8 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
   // Load gallery photos when gallery changes
   useEffect(() => {
     if (gallery) {
-      setViewMode('gallery');
+      console.log('Loading photos for gallery:', gallery.id);
       loadGalleryPhotos();
-    } else {
-      setViewMode('welcome');
     }
   }, [gallery]);
 
@@ -90,9 +99,11 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
         return;
       }
 
+      console.log('Joined gallery:', data);
       setGallery(data);
       setJoinCode('');
     } catch (err: any) {
+      console.error('Join gallery error:', err);
       setError('שגיאה בהצטרפות לגלריה: ' + err.message);
     } finally {
       setIsLoading(false);
@@ -101,23 +112,33 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
   // Load gallery photos
   const loadGalleryPhotos = useCallback(async () => {
-    if (!gallery) return;
+    if (!gallery) {
+      console.log('No gallery to load photos for');
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
     setSearchedPhoto(null);
 
     try {
+      console.log('Loading photos for gallery ID:', gallery.id);
       const { data, error } = await supabase
         .from('photos')
         .select('*')
         .eq('gallery_id', gallery.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading photos:', error);
+        throw error;
+      }
+      
+      console.log('Loaded photos:', data);
       setGalleryPhotos(data || []);
       setViewMode('gallery');
     } catch (err: any) {
+      console.error('Load gallery photos error:', err);
       setError('שגיאה בטעינת הגלריה: ' + err.message);
       setGalleryPhotos([]);
     } finally {
@@ -141,6 +162,7 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
       const desc = await generateFunnyDescription(file, gallery?.settings);
       setDescription(desc);
     } catch (err: any) {
+      console.error('Generate description error:', err);
       setError('שגיאה ביצירת התיאור: ' + err.message);
     } finally {
       setIsGenerating(false);
@@ -158,6 +180,7 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
       const desc = await generateFunnyDescription(selectedFile, gallery?.settings);
       setDescription(desc);
     } catch (err: any) {
+      console.error('Regenerate description error:', err);
       setError('שגיאה ביצירת התיאור: ' + err.message);
     } finally {
       setIsGenerating(false);
@@ -188,7 +211,10 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
         .from('photos')
         .upload(filePath, selectedFile);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
 
       // Get public URL
       const { data: publicUrlData } = supabase.storage
@@ -208,7 +234,12 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Insert error:', insertError);
+        throw insertError;
+      }
+
+      console.log('Photo saved successfully:', data);
 
       // Reset form
       setSelectedFile(null);
@@ -220,6 +251,7 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
       await loadGalleryPhotos();
 
     } catch (err: any) {
+      console.error('Save photo error:', err);
       setError('שגיאה בשמירת התמונה: ' + err.message);
     } finally {
       setIsLoading(false);
@@ -252,6 +284,7 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
       setSearchedPhoto(data || null);
       setViewMode('search');
     } catch (err: any) {
+      console.error('Search error:', err);
       setError('שגיאה בחיפוש התמונה: ' + err.message);
       setSearchedPhoto(null);
     } finally {
@@ -314,6 +347,7 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
       if (searchedPhoto?.id === photo.id) setSearchedPhoto(null);
 
     } catch (err: any) {
+      console.error('Delete photo error:', err);
       setError('שגיאה במחיקת התמונה: ' + err.message);
     } finally {
       setIsDeleting(null);
