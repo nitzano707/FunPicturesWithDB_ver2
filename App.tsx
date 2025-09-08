@@ -120,6 +120,7 @@ const App: React.FC = () => {
   }
 
   if (showDisclaimer) {
+    console.log('📝 Showing disclaimer');
     return (
       <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
         <div className="bg-gray-800 p-6 rounded-xl max-w-md text-center shadow-lg">
@@ -131,6 +132,7 @@ const App: React.FC = () => {
           <div className="flex justify-center gap-4">
             <button
               onClick={() => {
+                console.log('📝 User agreed to terms');
                 localStorage.setItem('user_agreed_to_terms', 'true');
                 setShowDisclaimer(false);
               }}
@@ -140,6 +142,7 @@ const App: React.FC = () => {
             </button>
             <button
               onClick={() => {
+                console.log('📝 User declined terms');
                 localStorage.setItem('user_agreed_to_terms', 'false');
                 setDeclined(true);
               }}
