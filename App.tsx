@@ -33,6 +33,13 @@ const App: React.FC = () => {
     setSelectedGallery(null);
   };
 
+  // טיפול בהתחברות Google - כאשר משתמש מתחבר, העבר אותו לדף הקפטן
+  useEffect(() => {
+    if (user && currentPage === 'home') {
+      setCurrentPage('captain-select');
+    }
+  }, [user]);
+
   // Disclaimer handling
   if (declined) {
     return (
