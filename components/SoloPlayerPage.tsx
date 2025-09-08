@@ -191,7 +191,7 @@ const SoloPlayerPage: React.FC<SoloPlayerPageProps> = ({ onGoHome }) => {
                     disabled={!username.trim()}
                     className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    הורד תמונה + תיאור
+                    הורד קובץ תיאור
                   </button>
 
                   <button
