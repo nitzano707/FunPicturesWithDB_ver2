@@ -7,10 +7,10 @@ import type { PageType, Gallery } from './types';
 import HomePage from './components/HomePage';
 import CaptainSelectPage from './components/CaptainSelectPage';
 import GallerySetupPage from './components/GallerySetupPage';
+import GalleryActivePage from './components/GalleryActivePage';
 import Spinner from './components/Spinner';
 
 // קומפוננטים זמניים עד שניצור אותם
-const GalleryActivePage = () => <div>Gallery Active - בבנייה</div>;
 const SoloPlayerPage = () => <div>Solo Player - בבנייה</div>;
 
 const App: React.FC = () => {
