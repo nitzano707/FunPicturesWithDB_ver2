@@ -183,7 +183,7 @@ const SoloPlayerPage: React.FC<SoloPlayerPageProps> = ({ onGoHome }) => {
                     disabled={isGenerating}
                     className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 disabled:opacity-50"
                   >
-                    {isGenerating ? 'מחשב...' : 'נסה תיאור אחר'}
+                    {isGenerating ? 'הבינה המלאכותית חושבת...' : 'נסה תיאור אחר'}
                   </button>
                   
                   <button
