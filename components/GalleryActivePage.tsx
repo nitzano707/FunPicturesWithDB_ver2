@@ -265,23 +265,47 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     setError(null);
 
     try {
-      // Extract storage path from URL
+      if (isAdmin) {
+        // אדמין: קבל את קוד האדמין מהגלריה
+        const adminCode = gallery?.admin_code;
+        if (!adminCode) {
+          throw new Error('Could not verify admin permissions');
+        }
+
+        // השתמש ב-RPC עם בדיקת אדמין
+        const { error: rpcError } = await supabase
+          .rpc('delete_photo_with_admin_check', {
+            photo_id: photo.id,
+            owner_identifier: ownerIdentifier,
+            is_admin: true,
+            admin_code: adminCode
+          });
+
+        if (rpcError) {
+          throw new Error(`Admin delete failed: ${rpcError.message}`);
+        }
+      } else {
+        // משתמש רגיל: השתמש ב-RPC ללא קוד אדמין
+        const { error: rpcError } = await supabase
+          .rpc('delete_photo_with_admin_check', {
+            photo_id: photo.id,
+            owner_identifier: ownerIdentifier,
+            is_admin: false,
+            admin_code: null
+          });
+
+        if (rpcError) {
+          throw new Error(`Delete failed: ${rpcError.message}`);
+        }
+      }
+
+      // מחיקת הקובץ מה-Storage גם כן
       const url = new URL(photo.image_url);
       const pathParts = url.pathname.split('/');
       const fileName = pathParts[pathParts.length - 1];
       const storagePath = `${photo.gallery_id}/${fileName}`;
 
-      // Delete from storage
       await supabase.storage.from('photos').remove([storagePath]);
-
-      // Delete from database
-      let query = supabase.from('photos').delete().eq('id', photo.id);
-      if (!isAdmin) {
-        query = query.eq('owner_identifier', ownerIdentifier);
-      }
-
-      const { error } = await query;
-      if (error) throw error;
 
       // Update UI
       setGalleryPhotos(prev => prev.filter(p => p.id !== photo.id));
