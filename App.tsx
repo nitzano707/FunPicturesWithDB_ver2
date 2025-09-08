@@ -74,13 +74,19 @@ const App: React.FC = () => {
           </p>
           <div className="flex justify-center gap-4">
             <button
-              onClick={() => setShowDisclaimer(false)}
+              onClick={() => {
+                localStorage.setItem('user_agreed_to_terms', 'true');
+                setShowDisclaimer(false);
+              }}
               className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg"
             >
               אני מסכים
             </button>
             <button
-              onClick={() => setDeclined(true)}
+              onClick={() => {
+                localStorage.setItem('user_agreed_to_terms', 'false');
+                setDeclined(true);
+              }}
               className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg"
             >
               אני לא מסכים
