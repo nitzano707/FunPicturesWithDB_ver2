@@ -644,28 +644,12 @@ const getWhatsAppMessage = () => {
       {/* Gallery info header */}
       <div className="mb-8 bg-white/5 p-4 rounded-xl border border-white/10">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-         /* <div>
-            <h2 className="text-2xl font-bold text-purple-300 mb-2">{gallery.name}</h2>
-            {isAdmin && (
-              <span className="px-2 py-0.5 bg-amber-500/30 rounded text-amber-200 text-sm mr-2">
-                קפטן (מנהל גלריה)
-              </span>
-            )}
-            <div className="text-sm text-gray-400 mt-1">
-              קוד שיתוף: <code className="text-gray-200">{gallery.share_code}</code>
-              {isAdmin && (
-                <>
-                  {' • קוד ניהול: '}
-                  <code className="text-gray-200">{gallery.admin_code}</code>
-                </>
-              )}
-            </div>
-          </div>
-          */
+         
 
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <h2 className="text-2xl font-bold text-purple-300">{gallery.name}</h2>
+              <h2 className="text-2xl font-bold text-purple-300">שם הגלריה: {gallery.name}</h2>
+              <br>
               {gallery.creator_email && (
                 <span className="text-sm text-gray-400">האימייל של הקפטן - יוצר הגלריה הזו: {gallery.creator_email}</span>
               )}
