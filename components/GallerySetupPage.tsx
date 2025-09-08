@@ -87,6 +87,10 @@ const GallerySetupPage: React.FC<GallerySetupPageProps> = ({ user, onNavigate, o
       console.log('Gallery created successfully:', gallery);
       console.log('🔄 ABOUT TO NAVIGATE TO GALLERY...');
 
+      // שמור את הגלריה ב-localStorage לפני המעבר
+      localStorage.setItem('pending_gallery', JSON.stringify(gallery));
+      console.log('💾 Gallery saved to localStorage');
+
       // מעבר לגלריה החדשה - עם דיליי קטן כדי להבטיח שהState יתעדכן
       setTimeout(() => {
         console.log('🎯 CALLING onNavigate...');
