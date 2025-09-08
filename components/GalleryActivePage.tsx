@@ -58,6 +58,11 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     return photo.owner_identifier === ownerIdentifier;
   };
 
+  // בדיקה זמנית
+  console.log('isAdmin:', isAdmin);
+  console.log('gallery:', gallery?.name);
+  console.log('user:', user?.email);
+
   // Load gallery photos when gallery changes
   useEffect(() => {
     if (gallery) {
