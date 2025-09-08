@@ -54,6 +54,13 @@ const App: React.FC = () => {
     }
   }, [user]);
 
+  // אם משתמש מחובר - לא להציג דיסקליימר
+  useEffect(() => {
+    if (user && showDisclaimer) {
+      setShowDisclaimer(false);
+    }
+  }, [user, showDisclaimer]);
+
   // Disclaimer handling
   if (declined) {
     return (
