@@ -146,39 +146,38 @@ const GallerySetupPage: React.FC<GallerySetupPageProps> = ({ user, onNavigate, o
           </div>
         </section>
 
-        {/* Basic - מהיר להתחלה */}
+        {/* Basic Settings */}
         <section className="bg-white/10 p-6 rounded-xl border border-white/10">
-          <h3 className="text-xl font-bold text-white mb-4 border-b-2 border-purple-500 pb-2">Basic — מהיר להתחלה</h3>
+          <h3 className="text-xl font-bold text-white mb-4 border-b-2 border-purple-500 pb-2">הגדרות בסיסיות</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">טווח גילאים *</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">טווח גילאים</label>
               <select
                 value={settings.ageRange}
                 onChange={(e) => updateSettings('ageRange', e.target.value)}
                 className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500"
               >
-                <option value="8-12">8—12</option>
-                <option value="13-17">13—17</option>
+                <option value="8-12">8-12</option>
+                <option value="13-17">13-17</option>
                 <option value="18+">18+</option>
               </select>
-              <p className="text-xs text-gray-400 mt-1">משפיע על השפה וההומור.</p>
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">שפת הכתיבה *</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">שפה</label>
               <select
                 value={settings.language}
                 onChange={(e) => updateSettings('language', e.target.value)}
                 className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500"
               >
-                <option value="hebrew_regular">עברית — רגילה</option>
-                <option value="hebrew_slang">עברית — סלנג קליל</option>
-                <option value="english_regular">אנגלית — רגילה</option>
+                <option value="hebrew_regular">עברית רגילה</option>
+                <option value="hebrew_slang">עברית סלנג</option>
+                <option value="english_regular">אנגלית</option>
               </select>
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">אורך יעד (מילים)</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">אורך תיאור</label>
               <input
                 type="number"
                 min="60"
@@ -192,7 +191,7 @@ const GallerySetupPage: React.FC<GallerySetupPageProps> = ({ user, onNavigate, o
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Family-friendly</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Family Friendly</label>
               <select
                 value={settings.familyFriendly}
                 onChange={(e) => updateSettings('familyFriendly', e.target.value)}
@@ -217,7 +216,7 @@ const GallerySetupPage: React.FC<GallerySetupPageProps> = ({ user, onNavigate, o
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">מינון אימוג'י</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">אימוג'י</label>
               <select
                 value={settings.emojiUsage}
                 onChange={(e) => updateSettings('emojiUsage', e.target.value)}
@@ -231,10 +230,10 @@ const GallerySetupPage: React.FC<GallerySetupPageProps> = ({ user, onNavigate, o
           </div>
         </section>
 
-        {/* Advanced - התאמה יצירתית */}
+        {/* Advanced Settings */}
         <section className="bg-white/10 p-6 rounded-xl border border-white/10">
-          <h3 className="text-xl font-bold text-white mb-4 border-b-2 border-purple-500 pb-2">Advanced — התאמה יצירתית</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <h3 className="text-xl font-bold text-white mb-4 border-b-2 border-purple-500 pb-2">הגדרות מתקדמות</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">טון</label>
               <select
@@ -244,14 +243,14 @@ const GallerySetupPage: React.FC<GallerySetupPageProps> = ({ user, onNavigate, o
               >
                 <option value="encouraging">מעודד</option>
                 <option value="standup">סטנד-אפ</option>
-                <option value="satirical">סאטירי קליל</option>
+                <option value="satirical">סאטירי</option>
                 <option value="poetic">פיוטי</option>
-                <option value="documentary">דוקומנטרי קליל</option>
+                <option value="documentary">דוקומנטרי</option>
               </select>
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">ז'אנר/עולם</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">ז'אנר</label>
               <select
                 value={settings.genre}
                 onChange={(e) => updateSettings('genre', e.target.value)}
@@ -259,98 +258,31 @@ const GallerySetupPage: React.FC<GallerySetupPageProps> = ({ user, onNavigate, o
               >
                 <option value="contemporary">עכשווי</option>
                 <option value="fantasy">פנטזיה</option>
-                <option value="scifi">מד'ב</option>
-                <option value="noir">נואר בלשי</option>
+                <option value="scifi">מד"ב</option>
+                <option value="noir">נואר</option>
                 <option value="folklore">אגדה</option>
-                <option value="trailer">טריילר קולנועי</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">סגנון כתיבה</label>
-              <select
-                value={settings.perspective}
-                onChange={(e) => updateSettings('perspective', e.target.value)}
-                className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500"
-              >
-                <option value="third_person">גוף שלישי</option>
-                <option value="direct">פנייה ישירה</option>
+                <option value="trailer">טריילר</option>
               </select>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">אנרגיה</label>
-              <select
-                value={settings.energy}
-                onChange={(e) => updateSettings('energy', e.target.value)}
-                className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500"
-              >
-                <option value="calm">רגוע</option>
-                <option value="moderate">בינוני</option>
-                <option value="energetic">קופצני</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">עושר לשוני</label>
-              <select
-                value={settings.languageRichness}
-                onChange={(e) => updateSettings('languageRichness', e.target.value)}
-                className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500"
-              >
-                <option value="simple">פשוט</option>
-                <option value="regular">רגיל</option>
-                <option value="rich">עשיר</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">רפרנסים תרבותיים</label>
-              <select
-                value={settings.culturalReferences}
-                onChange={(e) => updateSettings('culturalReferences', e.target.value)}
-                className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500"
-              >
-                <option value="none">אין</option>
-                <option value="light_israeli">ישראליים קלים</option>
-                <option value="light_international">בינלאומיים קלים</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">סיומת קבועה</label>
-              <input
-                type="text"
-                value={settings.customEnding}
-                onChange={(e) => updateSettings('customEnding', e.target.value)}
-                className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">הרבת "שטויניקיות"</label>
-              <select
-                value={settings.shtuyotLevel}
-                onChange={(e) => updateSettings('shtuyotLevel', e.target.value)}
-                className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500"
-              >
-                <option value="low">נמוכה</option>
-                <option value="moderate">בינונית</option>
-                <option value="high">גבוהה</option>
-              </select>
-            </div>
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-300 mb-1">סיומת מותאמת</label>
+            <input
+              type="text"
+              value={settings.customEnding}
+              onChange={(e) => updateSettings('customEnding', e.target.value)}
+              placeholder="לא לקחת ברצינות 😉"
+              className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500"
+            />
           </div>
 
           {/* משקלי פוקוס */}
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">משקלי פוקוס בתיאור</label>
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-gray-300 mb-2">משקלי פוקוס</label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <label className="block text-xs text-gray-400 mb-1">הבעה (0—1)</label>
+                <label className="block text-xs text-gray-400 mb-1">הבעה</label>
                 <input
                   type="number"
                   min="0"
@@ -358,11 +290,35 @@ const GallerySetupPage: React.FC<GallerySetupPageProps> = ({ user, onNavigate, o
                   step="0.1"
                   value={settings.focusWeights.expression}
                   onChange={(e) => updateFocusWeight('expression', parseFloat(e.target.value))}
-                  className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-2 py-1 text-white text-sm focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-2 py-1 text-white text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1">רקע (0—1)</label>
+                <label className="block text-xs text-gray-400 mb-1">תנוחה</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={settings.focusWeights.pose}
+                  onChange={(e) => updateFocusWeight('pose', parseFloat(e.target.value))}
+                  className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-2 py-1 text-white text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">לבוש</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={settings.focusWeights.clothing}
+                  onChange={(e) => updateFocusWeight('clothing', parseFloat(e.target.value))}
+                  className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-2 py-1 text-white text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">רקע</label>
                 <input
                   type="number"
                   min="0"
@@ -370,17 +326,15 @@ const GallerySetupPage: React.FC<GallerySetupPageProps> = ({ user, onNavigate, o
                   step="0.1"
                   value={settings.focusWeights.background}
                   onChange={(e) => updateFocusWeight('background', parseFloat(e.target.value))}
-                  className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-2 py-1 text-white text-sm focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-2 py-1 text-white text-sm"
                 />
               </div>
             </div>
-            <p className="text-xs text-gray-400 mt-2">אין חובה לסכום=1; זה רק מדגיש למה לתת יותר תשומת לב.</p>
           </div>
         </section>
 
-        {/* פעולות */}
+        {/* Actions */}
         <section className="bg-white/10 p-6 rounded-xl border border-white/10">
-          <h3 className="text-xl font-bold text-white mb-4 border-b-2 border-green-500 pb-2">שמירה והמשך</h3>
           <div className="flex flex-col sm:flex-row gap-4">
             <button
               onClick={handleCreateGallery}
@@ -397,37 +351,10 @@ const GallerySetupPage: React.FC<GallerySetupPageProps> = ({ user, onNavigate, o
               ביטול
             </button>
           </div>
-          <p className="text-xs text-gray-400 mt-4">
-            לאחר יצירה יוצגו: קוד ניהול (לשמור אצלך) וקוד שיתוף (לשלוח לחברים).
-          </p>
         </section>
       </div>
     </div>
   );
 };
 
-export default GallerySetupPage;ring-purple-500 focus:border-purple-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">תנוחה (0—1)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={settings.focusWeights.pose}
-                  onChange={(e) => updateFocusWeight('pose', parseFloat(e.target.value))}
-                  className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-2 py-1 text-white text-sm focus:ring-purple-500 focus:border-purple-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">לבוש (0—1)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={settings.focusWeights.clothing}
-                  onChange={(e) => updateFocusWeight('clothing', parseFloat(e.target.value))}
-                  className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-2 py-1 text-white text-sm focus:
+export default GallerySetupPage;
