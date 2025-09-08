@@ -43,6 +43,7 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isDeletingGallery, setIsDeletingGallery] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   // Check if user is admin
