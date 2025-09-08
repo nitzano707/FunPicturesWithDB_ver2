@@ -326,6 +326,12 @@ const getWhatsAppMessage = () => {
     try {
       const desc = await generateFunnyDescription(selectedFile, gallery?.settings);
       setDescription(desc);
+       // השמעת צחוק
+      try {
+        await new Audio('/lol/mixkit-cartoon-voice-laugh-343.wav').play();
+      } catch (e) {
+        console.error("Audio play failed:", e);
+      }
     } catch (err: any) {
       setError('שגיאה ביצירת התיאור: ' + err.message);
     } finally {
