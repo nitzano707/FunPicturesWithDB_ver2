@@ -40,6 +40,8 @@ const GallerySetupPage: React.FC<GallerySetupPageProps> = ({ user, onNavigate, o
   };
 
   const handleCreateGallery = async () => {
+    console.log('🏗️ STARTING GALLERY CREATION');
+    
     if (!user) {
       setError('נדרשת התחברות ליצירת גלריה');
       return;
@@ -83,9 +85,11 @@ const GallerySetupPage: React.FC<GallerySetupPageProps> = ({ user, onNavigate, o
       }
 
       console.log('Gallery created successfully:', gallery);
+      console.log('🔄 ABOUT TO NAVIGATE TO GALLERY...');
 
       // מעבר לגלריה החדשה - עם דיליי קטן כדי להבטיח שהState יתעדכן
       setTimeout(() => {
+        console.log('🎯 CALLING onNavigate...');
         onNavigate('gallery-active', gallery);
       }, 100);
 
