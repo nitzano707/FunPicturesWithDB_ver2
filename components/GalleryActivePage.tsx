@@ -304,7 +304,7 @@ const getWhatsAppMessage = () => {
       
       // השמעת צחוק
       try {
-        await new Audio('./public/lol/mixkit-cartoon-voice-laugh-343.wav').play();
+        await new Audio('/lol/mixkit-cartoon-voice-laugh-343.wav').play();
       } catch (e) {
         console.error("Audio play failed:", e);
       }
