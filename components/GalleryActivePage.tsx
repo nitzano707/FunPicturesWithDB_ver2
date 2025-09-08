@@ -59,7 +59,18 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
   // Load gallery photos when gallery changes
   useEffect(() => {
+    // טיפול ב-Auth callback אם קיים
+    const cleanAuthParams = () => {
+      if (window.location.hash.includes('access_token')) {
+        console.log('🔄 Cleaning auth params in GalleryActivePage...');
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    };
+    
+    cleanAuthParams();
+    
     if (gallery) {
+      console.log('📸 Loading photos for gallery:', gallery.name);
       setViewMode('gallery');
       loadGalleryPhotos();
     } else {
