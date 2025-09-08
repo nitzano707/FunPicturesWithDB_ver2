@@ -167,6 +167,7 @@ const App: React.FC = () => {
         <div className="flex justify-between items-center mb-4">
           <div className="w-32"></div> {/* spacer for balance */}
           
+        
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <img
               src="/lol/humorizeme.png"
@@ -177,6 +178,9 @@ const App: React.FC = () => {
               HumorizeMe
             </h1>
           </div>
+          <p className="text-gray-400 mt-2">תנו ל-AI לספר לכם מי אתם "באמת"...</p>
+        </div>
+
           
             <p className="text-gray-400 mt-2">תנו ל-AI לספר לכם מי אתם "באמת"...</p>
           </div>
