@@ -54,13 +54,6 @@ const App: React.FC = () => {
     }
   }, [user]);
 
-  // אם משתמש מחובר - לא להציג דיסקליימר
-  useEffect(() => {
-    if (user && showDisclaimer) {
-      setShowDisclaimer(false);
-    }
-  }, [user, showDisclaimer]);
-
   // בדיקה אם המשתמש כבר הסכים לתנאים
   useEffect(() => {
     const userAgreed = localStorage.getItem('user_agreed_to_terms');
@@ -68,6 +61,13 @@ const App: React.FC = () => {
       setShowDisclaimer(false);
     }
   }, []);
+
+  // אם משתמש מחובר - לא להציג דיסקליימר
+  useEffect(() => {
+    if (user && showDisclaimer) {
+      setShowDisclaimer(false);
+    }
+  }, [user, showDisclaimer]);
 
   // Disclaimer handling
   if (declined) {
