@@ -649,7 +649,7 @@ const getWhatsAppMessage = () => {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <h2 className="text-2xl font-bold text-purple-300">שם הגלריה: {gallery.name}</h2>
-              <br>
+              <br />
               {gallery.creator_email && (
                 <span className="text-sm text-gray-400">האימייל של הקפטן - יוצר הגלריה הזו: {gallery.creator_email}</span>
               )}
