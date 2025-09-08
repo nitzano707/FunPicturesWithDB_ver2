@@ -127,7 +127,7 @@ const App: React.FC = () => {
           />
         )}
         
-        {currentPage === 'gallery-active' && selectedGallery && (
+        {currentPage === 'gallery-active' && (
           <GalleryActivePage 
             gallery={selectedGallery}
             user={user}
