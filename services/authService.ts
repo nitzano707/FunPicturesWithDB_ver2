@@ -6,10 +6,15 @@ export const authService = {
   // התחברות עם Google
   async signInWithGoogle(): Promise<{ user: User | null; error: any }> {
     try {
+      // קביעת redirect URL ידנית
+      const redirectUrl = window.location.hostname.includes('vercel.app') 
+        ? window.location.origin 
+        : 'https://fun-pictures-with-db-ver2.vercel.app';
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin
+          redirectTo: redirectUrl
         }
       });
 
