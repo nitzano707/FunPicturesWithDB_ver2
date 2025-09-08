@@ -191,8 +191,8 @@ const getWhatsAppMessage = () => {
     try {
       const { error: rpcError } = await supabase
         .rpc('delete_entire_gallery', {
-          gallery_id: gallery.id,
-          admin_code: gallery.admin_code
+          p_gallery_id: gallery.id,
+          p_admin_code: gallery.admin_code
         });
 
       if (rpcError) {
