@@ -13,6 +13,7 @@ import SoloPlayerPage from './components/SoloPlayerPage';
 import Spinner from './components/Spinner';
 
 const App: React.FC = () => {
+  console.log('🚀 APP.TSX VERSION: 2025-01-09-LATEST - נטען!');
   const { user, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   const [selectedGallery, setSelectedGallery] = useState<Gallery | null>(null);
