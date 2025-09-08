@@ -1,6 +1,7 @@
 // App.tsx
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './contexts/AuthContext';
+import { authService } from './services/authService';
 import type { PageType, Gallery } from './types';
 
 // Import של הקומפוננטים
@@ -17,6 +18,7 @@ const App: React.FC = () => {
   const [selectedGallery, setSelectedGallery] = useState<Gallery | null>(null);
   const [showDisclaimer, setShowDisclaimer] = useState(true);
   const [declined, setDeclined] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   // פונקציות ניווט
   const navigateToPage = (page: PageType, gallery?: Gallery) => {
@@ -29,6 +31,20 @@ const App: React.FC = () => {
   const goHome = () => {
     setCurrentPage('home');
     setSelectedGallery(null);
+  };
+
+  // פונקציית התנתקות
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      await authService.signOut();
+      // חזרה לדף הבית לאחר התנתקות
+      goHome();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    } finally {
+      setIsSigningOut(false);
+    }
   };
 
   // טיפול בהתחברות Google - כאשר משתמש מתחבר, העבר אותו לדף הקפטן
@@ -87,18 +103,42 @@ const App: React.FC = () => {
   // Main app container
   return (
     <div className="min-h-screen bg-gray-900 text-white bg-gradient-to-br from-gray-900 via-purple-900/40 to-gray-900">
-      {/* Header */}
+      {/* Header עם לחצן התנתקות */}
       <header className="text-center p-4">
-        <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
-          HumorizeMe - גרסה 2
-        </h1>
-        <p className="text-gray-400 mt-2">תנו ל-AI לספר לכם מי אתם "באמת"...</p>
+        <div className="flex justify-between items-center mb-4">
+          <div className="w-32"></div> {/* spacer for balance */}
+          
+          <div className="flex-1 text-center">
+            <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
+              HumorizeMe - גרסה 2
+            </h1>
+            <p className="text-gray-400 mt-2">תנו ל-AI לספר לכם מי אתם "באמת"...</p>
+          </div>
+
+          {/* User info and sign out button */}
+          <div className="w-32 text-left">
+            {user && (
+              <div className="text-right">
+                <div className="text-gray-400 text-sm mb-1 truncate" title={user.name || user.email}>
+                  {user.name || user.email}
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  disabled={isSigningOut}
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSigningOut ? '...' : 'התנתק'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
         
         {/* Back to home button when not on home */}
         {currentPage !== 'home' && (
           <button
             onClick={goHome}
-            className="mt-4 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg"
+            className="mt-4 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
           >
             חזרה לדף הבית
           </button>
