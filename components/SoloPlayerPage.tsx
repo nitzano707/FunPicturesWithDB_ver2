@@ -33,6 +33,8 @@ const SoloPlayerPage: React.FC<SoloPlayerPageProps> = ({ onGoHome }) => {
       const desc = await generateFunnyDescription(file);
       setDescription(desc);
       setShowResult(true);
+      new Audio('/lol/mixkit-cartoon-voice-laugh-343.wav').play();
+
     } catch (err: any) {
       setError('שגיאה ביצירת התיאור: ' + err.message);
     } finally {
@@ -48,6 +50,8 @@ const SoloPlayerPage: React.FC<SoloPlayerPageProps> = ({ onGoHome }) => {
     try {
       const desc = await generateFunnyDescription(selectedFile);
       setDescription(desc);
+      new Audio('/lol/mixkit-cartoon-voice-laugh-343.wav').play();
+
     } catch (err: any) {
       setError('שגיאה ביצירת התיאור: ' + err.message);
     } finally {
