@@ -8,10 +8,8 @@ import HomePage from './components/HomePage';
 import CaptainSelectPage from './components/CaptainSelectPage';
 import GallerySetupPage from './components/GallerySetupPage';
 import GalleryActivePage from './components/GalleryActivePage';
+import SoloPlayerPage from './components/SoloPlayerPage';
 import Spinner from './components/Spinner';
-
-// קומפוננטים זמניים עד שניצור אותם
-const SoloPlayerPage = () => <div>Solo Player - בבנייה</div>;
 
 const App: React.FC = () => {
   const { user, loading } = useAuth();
