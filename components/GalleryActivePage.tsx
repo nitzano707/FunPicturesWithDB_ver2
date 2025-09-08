@@ -14,17 +14,30 @@ interface GalleryActivePageProps {
   onGoHome: () => void;
 }
 
-const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialGallery, user, onGoHome }) => {
+const GalleryActivePage: React.FC<GalleryActivePageProps> = (props) => {
+  // Destructure props safely
+  const { gallery: propsGallery, user, onGoHome } = props;
+  
+  console.log('GalleryActivePage render with props:', { propsGallery, user });
+
   // State for gallery/context
-  const [gallery, setGallery] = useState<Gallery | null>(null);
+  const [currentGallery, setCurrentGallery] = useState<Gallery | null>(propsGallery || null);
   const [joinCode, setJoinCode] = useState('');
+  
+  // Owner identifier - simplified
   const [ownerIdentifier] = useState(() => {
-    const k = 'owner_identifier_v1';
-    const existing = localStorage.getItem(k);
-    if (existing) return existing;
-    const fresh = uuidv4();
-    localStorage.setItem(k, fresh);
-    return fresh;
+    try {
+      const key = 'owner_identifier_v1';
+      let existing = localStorage.getItem(key);
+      if (!existing) {
+        existing = uuidv4();
+        localStorage.setItem(key, existing);
+      }
+      return existing;
+    } catch (e) {
+      console.error('LocalStorage error:', e);
+      return uuidv4(); // fallback
+    }
   });
 
   // Gallery state
@@ -45,22 +58,22 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize gallery from props
+  // Update gallery when props change
   useEffect(() => {
-    console.log('GalleryActivePage mounted with gallery:', initialGallery);
-    if (initialGallery) {
-      setGallery(initialGallery);
+    console.log('Props gallery changed:', propsGallery);
+    if (propsGallery) {
+      setCurrentGallery(propsGallery);
       setViewMode('gallery');
     } else {
-      setGallery(null);
+      setCurrentGallery(null);
       setViewMode('welcome');
     }
-  }, [initialGallery]);
+  }, [propsGallery]);
 
   // Check if user is admin
-  const isAdmin = user && gallery && (
-    gallery.creator_google_id === user.id || 
-    gallery.creator_identifier === ownerIdentifier
+  const isAdmin = user && currentGallery && (
+    currentGallery.creator_google_id === user.id || 
+    currentGallery.creator_identifier === ownerIdentifier
   );
 
   // Permission check for deleting photos
@@ -71,11 +84,11 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
   // Load gallery photos when gallery changes
   useEffect(() => {
-    if (gallery) {
-      console.log('Loading photos for gallery:', gallery.id);
+    if (currentGallery) {
+      console.log('Loading photos for gallery:', currentGallery.id);
       loadGalleryPhotos();
     }
-  }, [gallery]);
+  }, [currentGallery]);
 
   // Join gallery by share code
   const handleJoinGallery = async () => {
@@ -100,7 +113,7 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
       }
 
       console.log('Joined gallery:', data);
-      setGallery(data);
+      setCurrentGallery(data);
       setJoinCode('');
     } catch (err: any) {
       console.error('Join gallery error:', err);
@@ -112,7 +125,7 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
   // Load gallery photos
   const loadGalleryPhotos = useCallback(async () => {
-    if (!gallery) {
+    if (!currentGallery) {
       console.log('No gallery to load photos for');
       return;
     }
@@ -122,11 +135,11 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     setSearchedPhoto(null);
 
     try {
-      console.log('Loading photos for gallery ID:', gallery.id);
+      console.log('Loading photos for gallery ID:', currentGallery.id);
       const { data, error } = await supabase
         .from('photos')
         .select('*')
-        .eq('gallery_id', gallery.id)
+        .eq('gallery_id', currentGallery.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -144,7 +157,7 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     } finally {
       setIsLoading(false);
     }
-  }, [gallery]);
+  }, [currentGallery]);
 
   // Handle image upload
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -158,8 +171,7 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
     setIsGenerating(true);
     try {
-      // שימוש בהגדרות הגלריה אם קיימות
-      const desc = await generateFunnyDescription(file, gallery?.settings);
+      const desc = await generateFunnyDescription(file, currentGallery?.settings);
       setDescription(desc);
     } catch (err: any) {
       console.error('Generate description error:', err);
@@ -176,8 +188,7 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     setIsGenerating(true);
     setError(null);
     try {
-      // שימוש בהגדרות הגלריה אם קיימות
-      const desc = await generateFunnyDescription(selectedFile, gallery?.settings);
+      const desc = await generateFunnyDescription(selectedFile, currentGallery?.settings);
       setDescription(desc);
     } catch (err: any) {
       console.error('Regenerate description error:', err);
@@ -189,7 +200,7 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
   // Save photo to gallery
   const handleSave = async () => {
-    if (!gallery) {
+    if (!currentGallery) {
       setError('שגיאה: אין גלריה פעילה.');
       return;
     }
@@ -204,9 +215,8 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     try {
       const ext = selectedFile.name.split('.').pop() || 'png';
       const fileName = `${uuidv4()}.${ext}`;
-      const filePath = `${gallery.id}/${fileName}`;
+      const filePath = `${currentGallery.id}/${fileName}`;
 
-      // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from('photos')
         .upload(filePath, selectedFile);
@@ -216,16 +226,14 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
         throw uploadError;
       }
 
-      // Get public URL
       const { data: publicUrlData } = supabase.storage
         .from('photos')
         .getPublicUrl(filePath);
 
-      // Save to database
       const { data, error: insertError } = await supabase
         .from('photos')
         .insert([{
-          gallery_id: gallery.id,
+          gallery_id: currentGallery.id,
           owner_identifier: ownerIdentifier,
           username: username.trim(),
           image_url: publicUrlData.publicUrl,
@@ -241,13 +249,11 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
       console.log('Photo saved successfully:', data);
 
-      // Reset form
       setSelectedFile(null);
       setPreviewUrl(null);
       setDescription('');
       setUsername('');
 
-      // Reload gallery
       await loadGalleryPhotos();
 
     } catch (err: any) {
@@ -260,7 +266,7 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
   // Search for photo by username
   const handleSearch = async () => {
-    if (!gallery) return;
+    if (!currentGallery) return;
     if (!searchUsername.trim()) {
       setError('יש להזין שם משתמש לחיפוש.');
       return;
@@ -274,7 +280,7 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
       const { data, error } = await supabase
         .from('photos')
         .select('*')
-        .eq('gallery_id', gallery.id)
+        .eq('gallery_id', currentGallery.id)
         .eq('username', searchUsername.trim())
         .order('created_at', { ascending: false })
         .limit(1)
@@ -301,13 +307,11 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
     try {
       if (isAdmin) {
-        // אדמין: קבל את קוד האדמין מהגלריה
-        const adminCode = gallery?.admin_code;
+        const adminCode = currentGallery?.admin_code;
         if (!adminCode) {
           throw new Error('Could not verify admin permissions');
         }
 
-        // השתמש ב-RPC עם בדיקת אדמין
         const { error: rpcError } = await supabase
           .rpc('delete_photo_with_admin_check', {
             photo_id: photo.id,
@@ -320,7 +324,6 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
           throw new Error(`Admin delete failed: ${rpcError.message}`);
         }
       } else {
-        // משתמש רגיל: השתמש ב-RPC ללא קוד אדמין
         const { error: rpcError } = await supabase
           .rpc('delete_photo_with_admin_check', {
             photo_id: photo.id,
@@ -334,7 +337,6 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
         }
       }
 
-      // מחיקת הקובץ מה-Storage גם כן
       const url = new URL(photo.image_url);
       const pathParts = url.pathname.split('/');
       const fileName = pathParts[pathParts.length - 1];
@@ -342,7 +344,6 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
 
       await supabase.storage.from('photos').remove([storagePath]);
 
-      // Update UI
       setGalleryPhotos(prev => prev.filter(p => p.id !== photo.id));
       if (searchedPhoto?.id === photo.id) setSearchedPhoto(null);
 
@@ -354,8 +355,10 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     }
   };
 
+  console.log('Current render state:', { currentGallery, viewMode, galleryPhotos: galleryPhotos.length });
+
   // If no gallery, show join interface
-  if (!gallery) {
+  if (!currentGallery) {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="bg-white/10 rounded-2xl p-8 border border-teal-500/30 backdrop-blur-sm">
@@ -411,18 +414,18 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
       <div className="mb-8 bg-white/5 p-4 rounded-xl border border-white/10">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
           <div>
-            <h2 className="text-2xl font-bold text-purple-300 mb-2">{gallery.name}</h2>
+            <h2 className="text-2xl font-bold text-purple-300 mb-2">{currentGallery.name}</h2>
             {isAdmin && (
               <span className="px-2 py-0.5 bg-amber-500/30 rounded text-amber-200 text-sm mr-2">
                 אדמין
               </span>
             )}
             <div className="text-sm text-gray-400 mt-1">
-              קוד שיתוף: <code className="text-gray-200">{gallery.share_code}</code>
+              קוד שיתוף: <code className="text-gray-200">{currentGallery.share_code}</code>
               {isAdmin && (
                 <>
                   {' • קוד ניהול: '}
-                  <code className="text-gray-200">{gallery.admin_code}</code>
+                  <code className="text-gray-200">{currentGallery.admin_code}</code>
                 </>
               )}
             </div>
