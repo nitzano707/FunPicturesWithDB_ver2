@@ -55,6 +55,23 @@ const App: React.FC = () => {
     }
   }, [user]);
 
+  // טיפול ב-Auth callback - נקה URL אחרי התחברות
+  useEffect(() => {
+    const handleAuthCallback = async () => {
+      const hash = window.location.hash;
+      if (hash.includes('access_token')) {
+        console.log('🔄 Auth callback detected, cleaning URL...');
+        // תן לSupabase לעבד את הSession
+        setTimeout(() => {
+          window.history.replaceState({}, document.title, window.location.pathname);
+          console.log('✅ URL cleaned');
+        }, 1000);
+      }
+    };
+    
+    handleAuthCallback();
+  }, []);
+
   // בדיקה אם המשתמש כבר הסכים לתנאים
   useEffect(() => {
     const userAgreed = localStorage.getItem('user_agreed_to_terms');
