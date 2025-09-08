@@ -325,59 +325,6 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
     }
   };
 
-  // Delete gallery (admin only)
-  const handleDeleteGallery = async () => {
-    if (!gallery || !isAdmin) return;
-    
-    const confirmMessage = `האם אתה בטוח שברצונך למחוק את הגלריה "${gallery.name}"? פעולה זו בלתי הפיכה ותמחק את כל התמונות!`;
-    if (!window.confirm(confirmMessage)) return;
-
-    setIsDeletingGallery(true);
-    setError(null);
-
-    try {
-      // מחיקת כל התמונות של הגלריה מה-Storage
-      const { data: photos } = await supabase
-        .from('photos')
-        .select('image_url')
-        .eq('gallery_id', gallery.id);
-
-      if (photos && photos.length > 0) {
-        const storagePaths = photos.map(photo => {
-          const url = new URL(photo.image_url);
-          const pathParts = url.pathname.split('/');
-          const fileName = pathParts[pathParts.length - 1];
-          return `${gallery.id}/${fileName}`;
-        });
-
-        await supabase.storage.from('photos').remove(storagePaths);
-      }
-
-      // מחיקת כל התמונות מהדאטהבייס
-      const { error: photosError } = await supabase
-        .from('photos')
-        .delete()
-        .eq('gallery_id', gallery.id);
-
-      if (photosError) throw photosError;
-
-      // מחיקת הגלריה עצמה
-      const { error: galleryError } = await supabase
-        .from('galleries')
-        .delete()
-        .eq('id', gallery.id);
-
-      if (galleryError) throw galleryError;
-
-      // חזרה לעמוד הבית
-      onGoHome();
-    } catch (err: any) {
-      setError('שגיאה במחיקת הגלריה: ' + err.message);
-    } finally {
-      setIsDeletingGallery(false);
-    }
-  };
-
   // If no gallery, show join interface
   if (!gallery) {
     return (
@@ -454,34 +401,16 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
           <div className="flex gap-2">
             <button 
               onClick={loadGalleryPhotos} 
-              className="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded transition"
+              className="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded"
             >
               רענן גלריה
             </button>
             <button 
               onClick={onGoHome} 
-              className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded transition"
+              className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded"
             >
               עזוב גלריה
             </button>
-            {isAdmin && (
-              <button
-                onClick={handleDeleteGallery}
-                disabled={isDeletingGallery}
-                className="bg-red-800 hover:bg-red-900 text-white px-3 py-2 rounded transition disabled:opacity-50 flex items-center gap-2"
-              >
-                {isDeletingGallery ? (
-                  <>
-                    <Spinner />
-                    מוחק...
-                  </>
-                ) : (
-                  <>
-                    🗑️ מחק גלריה
-                  </>
-                )}
-              </button>
-            )}
           </div>
         </div>
       </div>
