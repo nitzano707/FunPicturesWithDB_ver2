@@ -214,11 +214,14 @@ const App: React.FC = () => {
         )}
         
         {currentPage === 'captain-select' && (
-          <CaptainSelectPage 
-            user={user} 
-            onNavigate={navigateToPage}
-            onGoHome={goHome}
-          />
+          <div>
+            {console.log('🧑‍✈️ About to render CaptainSelectPage')}
+            <CaptainSelectPage 
+              user={user} 
+              onNavigate={navigateToPage}
+              onGoHome={goHome}
+            />
+          </div>
         )}
         
         {currentPage === 'gallery-setup' && (
