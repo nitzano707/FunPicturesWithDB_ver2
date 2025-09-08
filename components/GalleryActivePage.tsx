@@ -74,11 +74,25 @@ const GalleryActivePage: React.FC<GalleryActivePageProps> = ({ gallery: initialG
   };
 
   // Generate WhatsApp message
-  const getWhatsAppMessage = () => {
+  /* const getWhatsAppMessage = () => {
     if (!gallery) return '';
     const url = getGalleryUrl();
     return `היי! הצטרף לגלריית התמונות שלנו "${gallery.name}" 📸\n\nלינק: ${url}\n\nאו הכנס ידנית את קוד השיתוף: ${gallery.share_code}\n\nבאפליקציה: HumorizeMe`;
   };
+  */
+  // Generate new WhatsApp message
+const getWhatsAppMessage = () => {
+  if (!gallery) return '';
+  const url = getGalleryUrl();
+  return `*HumorizeMe* 🎉\n\n` +
+         `היי!\n` +
+         `הצטרף לגלריית התמונות שלנו *"${gallery.name}"* 📸\n\n` +
+         `1️⃣ לחץ כאן לכניסה:\n🔗 ${url}\n\n` +
+         `2️⃣ לאחר פתיחת האפליקציה, בחר להצטרף כשחקן קבוצתי והזן את קוד השיתוף:\n` +
+         `🔑 *${gallery.share_code}*`;
+};
+
+  
 
   // Generate WhatsApp URL
   const getWhatsAppUrl = () => {
