@@ -168,16 +168,20 @@ const App: React.FC = () => {
           <div className="w-32"></div> {/* spacer for balance */}
           
           <div className="flex-1 text-center">
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <img
                 src="/lol/humorizeme.png"
                 alt="HumorizeMe Logo"
-                className="w-[200px] h-auto"
+                className="w-24 sm:w-[150px] h-auto"
               />
-              <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
+              <h1 className="text-3xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
                 HumorizeMe
               </h1>
             </div>
+            <p className="text-gray-400 mt-2">תנו ל-AI לספר לכם מי אתם "באמת"...</p>
+          </div>
+
+          
             <p className="text-gray-400 mt-2">תנו ל-AI לספר לכם מי אתם "באמת"...</p>
           </div>
 
