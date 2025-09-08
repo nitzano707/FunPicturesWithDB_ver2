@@ -178,7 +178,7 @@ const getWhatsAppMessage = () => {
   };
 
   // Delete entire gallery
-  const handleDeleteGallery = async () => {
+ /* const handleDeleteGallery = async () => {
     if (!gallery || !isAdmin) return;
 
     const confirmMessage = `האם אתה בטוח שברצונך למחוק את הגלריה "${gallery.name}" לגמרי?\n\nפעולה זו תמחק:\n- את כל התמונות בגלריה\n- את הגלריה עצמה\n\nפעולה זו לא ניתנת לביטול!`;
@@ -208,6 +208,58 @@ const getWhatsAppMessage = () => {
       setIsDeletingGallery(false);
     }
   };
+  */
+  const handleDeleteGallery = async () => {
+  if (!gallery || !isAdmin) return;
+
+  const confirmMessage = `האם אתה בטוח שברצונך למחוק את הגלריה "${gallery.name}" לגמרי?\n\nפעולה זו תמחק:\n- את כל התמונות בגלריה\n- את הגלריה עצמה\n\nפעולה זו לא ניתנת לביטול!`;
+
+  if (!window.confirm(confirmMessage)) return;
+
+  setIsDeletingGallery(true);
+  setError(null);
+
+  try {
+    // 1. מחיקת קבצים מה־bucket
+    const { data: photos, error: photosError } = await supabase
+      .from('photos')
+      .select('*')
+      .eq('gallery_id', gallery.id);
+
+    if (photosError) throw photosError;
+
+    if (photos && photos.length > 0) {
+      const pathsToRemove = photos.map(photo => {
+        const url = new URL(photo.image_url);
+        const fileName = url.pathname.split('/').pop();
+        return `${photo.gallery_id}/${fileName}`;
+      });
+
+      const { error: storageError } = await supabase.storage
+        .from('photos')
+        .remove(pathsToRemove);
+
+      if (storageError) throw storageError;
+    }
+
+    // 2. קריאה ל־RPC למחיקת הנתונים מהטבלאות
+    const { error: rpcError } = await supabase.rpc('delete_entire_gallery', {
+      p_gallery_id: gallery.id,
+      p_admin_code: gallery.admin_code,
+    });
+
+    if (rpcError) throw new Error(`Gallery delete failed: ${rpcError.message}`);
+
+    alert('הגלריה וכל התמונות נמחקו בהצלחה!');
+    onGoHome();
+
+  } catch (err: any) {
+    setError('שגיאה במחיקת הגלריה: ' + err.message);
+  } finally {
+    setIsDeletingGallery(false);
+  }
+};
+
 
   // Load gallery photos
   const loadGalleryPhotos = useCallback(async () => {
