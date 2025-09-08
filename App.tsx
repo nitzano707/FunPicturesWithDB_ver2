@@ -4,6 +4,7 @@ import { useAuth } from './contexts/AuthContext';
 import { authService } from './services/authService';
 import type { PageType, Gallery } from './types';
 
+// Import של הקומפוננטים
 import HomePage from './components/HomePage';
 import CaptainSelectPage from './components/CaptainSelectPage';
 import GallerySetupPage from './components/GallerySetupPage';
@@ -19,7 +20,7 @@ const App: React.FC = () => {
   const [declined, setDeclined] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  // ניווט בין עמודים
+  // פונקציות ניווט
   const navigateToPage = (page: PageType, gallery?: Gallery) => {
     setCurrentPage(page);
     if (gallery) {
@@ -32,11 +33,12 @@ const App: React.FC = () => {
     setSelectedGallery(null);
   };
 
-  // התנתקות
+  // פונקציית התנתקות
   const handleSignOut = async () => {
     setIsSigningOut(true);
     try {
       await authService.signOut();
+      // חזרה לדף הבית לאחר התנתקות
       goHome();
     } catch (error) {
       console.error('Error signing out:', error);
@@ -45,20 +47,21 @@ const App: React.FC = () => {
     }
   };
 
-  // מעבר למסך בחירת קפטן אחרי התחברות
+  // טיפול בהתחברות Google - כאשר משתמש מתחבר, העבר אותו לדף הקפטן
   useEffect(() => {
     if (user && currentPage === 'home') {
       setCurrentPage('captain-select');
     }
   }, [user]);
 
-  // אם המשתמש מחובר – לא להציג דיסקליימר
+  // אם משתמש מחובר - לא להציג דיסקליימר
   useEffect(() => {
     if (user && showDisclaimer) {
       setShowDisclaimer(false);
     }
   }, [user, showDisclaimer]);
 
+  // Disclaimer handling
   if (declined) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
@@ -81,10 +84,13 @@ const App: React.FC = () => {
               onClick={() => {
                 localStorage.setItem('user_agreed_to_terms', 'true');
                 setShowDisclaimer(false);
+                // בדוק אם יש קוד pending לאחר הסכמה
                 const pendingCode = localStorage.getItem('pending_gallery_code');
                 if (pendingCode) {
+                  // עבור ישירות לגלריה במקום לבחירת תפקיד
                   setCurrentPage('gallery-active');
                 } else {
+                  // אם אין קוד pending, עבור לדף הבית כרגיל
                   setCurrentPage('home');
                 }
               }}
@@ -107,6 +113,7 @@ const App: React.FC = () => {
     );
   }
 
+  // Loading state during auth check
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-900">
@@ -115,13 +122,14 @@ const App: React.FC = () => {
     );
   }
 
+  // Main app container
   return (
     <div className="min-h-screen bg-gray-900 text-white bg-gradient-to-br from-gray-900 via-purple-900/40 to-gray-900">
-      {/* Header */}
+      {/* Header עם לחצן התנתקות */}
       <header className="text-center p-4">
         <div className="flex justify-between items-center mb-4">
-          <div className="w-32"></div>
-
+          <div className="w-32"></div> {/* spacer for balance */}
+          
           <div className="flex-1 text-center">
             <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
               HumorizeMe - גרסה 2
@@ -129,6 +137,7 @@ const App: React.FC = () => {
             <p className="text-gray-400 mt-2">תנו ל-AI לספר לכם מי אתם "באמת"...</p>
           </div>
 
+          {/* User info and sign out button */}
           <div className="w-32 text-left">
             {user && (
               <div className="text-right">
@@ -146,7 +155,8 @@ const App: React.FC = () => {
             )}
           </div>
         </div>
-
+        
+        {/* Back to home button when not on home */}
         {currentPage !== 'home' && (
           <button
             onClick={goHome}
@@ -157,7 +167,7 @@ const App: React.FC = () => {
         )}
       </header>
 
-      {/* תוכן ראשי */}
+      {/* Main content - render different pages based on currentPage */}
       <main className="max-w-7xl mx-auto p-4">
         {currentPage === 'home' && (
           <HomePage onNavigate={navigateToPage} />
