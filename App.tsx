@@ -164,57 +164,60 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-gray-900 text-white bg-gradient-to-br from-gray-900 via-purple-900/40 to-gray-900">
       {/* Header עם לחצן התנתקות */}
       <header className="text-center p-4">
-        <div className="flex justify-between items-center mb-4">
-          <div className="w-32"></div> {/* spacer for balance */}
-          
-          <div className="flex-1 text-center">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <img
-                src="/lol/humorizeme.png"
-                alt="HumorizeMe Logo"
-                className="w-24 sm:w-[150px] h-auto"
-              />
-              <h1 className="text-3xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
-                HumorizeMe
-              </h1>
-            </div>
-            <p className="text-gray-400 mt-2">תנו ל-AI לספר לכם מי אתם "באמת"...</p>
-          </div>
+  <div className="flex justify-between items-center mb-4">
+    {/* spacer for balance */}
+    <div className="w-32"></div>
 
-          
-            <p className="text-gray-400 mt-2">תנו ל-AI לספר לכם מי אתם "באמת"...</p>
-          </div>
+    {/* לוגו + כותרת */}
+    <div className="flex-1 text-center">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <img
+          src="/lol/humorizeme.png"
+          alt="HumorizeMe Logo"
+          className="w-24 sm:w-[150px] h-auto"
+        />
+        <h1 className="text-3xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
+          HumorizeMe
+        </h1>
+      </div>
+      <p className="text-gray-400 mt-2">
+        תנו ל-AI לספר לכם מי אתם "באמת"...
+      </p>
+    </div>
 
-
-          {/* User info and sign out button */}
-          <div className="w-32 text-left">
-            {user && (
-              <div className="text-right">
-                <div className="text-gray-400 text-sm mb-1 truncate" title={user.name || user.email}>
-                  {user.name || user.email}
-                </div>
-                <button
-                  onClick={handleSignOut}
-                  disabled={isSigningOut}
-                  className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSigningOut ? '...' : 'התנתק'}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Back to home button when not on home */}
-        {currentPage !== 'home' && (
-          <button
-            onClick={goHome}
-            className="mt-4 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+    {/* מידע משתמש וכפתור התנתקות */}
+    <div className="w-32 text-left">
+      {user && (
+        <div className="text-right">
+          <div
+            className="text-gray-400 text-sm mb-1 truncate"
+            title={user.name || user.email}
           >
-            חזרה לדף הבית
+            {user.name || user.email}
+          </div>
+          <button
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+            className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSigningOut ? "..." : "התנתק"}
           </button>
-        )}
-      </header>
+        </div>
+      )}
+    </div>
+  </div>
+
+  {/* כפתור חזרה לדף הבית */}
+  {currentPage !== "home" && (
+    <button
+      onClick={goHome}
+      className="mt-4 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+    >
+      חזרה לדף הבית
+    </button>
+  )}
+</header>
+
 
       {/* Main content - render different pages based on currentPage */}
       <main className="max-w-7xl mx-auto p-4">
