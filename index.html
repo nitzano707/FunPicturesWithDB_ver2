@@ -5,26 +5,50 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HumorizeMe</title>
+
+    <!-- תגיות Open Graph -->
+    <meta property="og:title" content="HumorizeMe" />
+    <meta property="og:description" content="האתר שמכניס הומור לכל מצב 😄" />
+    <meta property="og:image" content="https://yourdomain.com/lol/humorizeme.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://yourdomain.com/" />
+
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap');
       body {
         font-family: 'Assistant', sans-serif;
       }
+      .site-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin: 20px;
+      }
+      .site-header img {
+        width: 200px;
+        height: auto;
+      }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.1.1",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
-    "react/": "https://aistudiocdn.com/react@^19.1.1/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.17.0",
-    "@supabase/supabase-js": "https://aistudiocdn.com/@supabase/supabase-js@^2.57.0"
-  }
-}
-</script>
-</head>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://aistudiocdn.com/react@^19.1.1",
+          "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+          "react/": "https://aistudiocdn.com/react@^19.1.1/",
+          "@google/genai": "https://aistudiocdn.com/@google/genai@^1.17.0",
+          "@supabase/supabase-js": "https://aistudiocdn.com/@supabase/supabase-js@^2.57.0"
+        }
+      }
+    </script>
+  </head>
   <body>
+    <header class="site-header">
+      <img src="lol/humorizeme.png" alt="HumorizeMe logo">
+      <h1>HumorizeMe</h1>
+    </header>
+
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
